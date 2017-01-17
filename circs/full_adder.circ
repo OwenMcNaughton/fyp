@@ -1,0 +1,29 @@
+xor1 XOR
+xor2 XOR
+and1 AND
+and2 AND
+orr1 ORR
+in a
+in b
+in cin
+out s
+out cout
+~
+a -> xor1, and1
+b -> xor1, and1
+cin -> and2, xor2
+xor1 -> xor2, and2
+and1 -> orr1
+and2 -> orr1
+xor2 -> s
+orr1 -> cout
+~
+a,b,cin,s,cout
+0,0,0,0,0
+0,0,1,1,0
+0,1,0,1,0
+0,1,1,0,1
+1,0,0,1,0
+1,0,1,0,1
+1,1,0,0,1
+1,1,1,1,1
