@@ -1,0 +1,19 @@
+xor1 ORR
+n1 NOT
+in a1
+in a2
+in b1
+in b2
+in cin
+out s1
+out s2
+out cout
+~
+a1 -> xor1
+a2 -> xor1
+b1 -> xor1
+b2 -> xor1
+xor1 -> s1
+xor1 -> s2
+cin -> n1
+n1 -> cout

@@ -3,6 +3,8 @@ xor2 XOR
 and1 AND
 and2 AND
 orr1 ORR
+n1 NOT
+n2 NOT
 in a
 in b
 in cin
@@ -15,5 +17,7 @@ cin -> and2, xor2
 xor1 -> xor2, and2
 and1 -> orr1
 and2 -> orr1
-xor2 -> s
-orr1 -> cout
+xor2 -> n1
+orr1 -> n2
+n1 -> s
+n2 -> cout

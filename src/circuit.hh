@@ -12,35 +12,36 @@ using namespace std;
 class Circuit {
  public:
   Circuit();
+  ~Circuit();
+  Circuit* Copy();
+
   void SetTruthTable(vector<vector<string>>& truth_table);
 
   void AddInput(Gate* g);
   void AddOutput(Gate* g);
   void AddGate(Gate* g);
-
-  void PrintOne(bool print_legend);
-  void PrintLegend();
-  void PrintAll();
+  void AddWire(const string& src, const string& dst);
 
   void TestOne();
   void TestAll();
-  void PrintCorrectness();
+  void TestAllIter(int idx);
 
   void Load(const string& filename);
-
-  void AddWire(const string& src, const string& dst);
   string Serialize();
   string DotGraph();
 
-  Circuit* Copy();
   void Mutate();
-  void Evolve();
-  void PrintLayout();
 
   void MutateExistingGate();
   void MutateEdgeSource();
   void MutateEdgeDestination();
+  void MutateOutputSource();
+  void MutateNewEdge();
+  void MutateNewGate();
+  void MutateRemoveGate();
 
+  static void Evolve();
+  
   bool FindLoops();
 
   bool operator<(Circuit& other) {
@@ -48,10 +49,6 @@ class Circuit {
     other.TestAll();
     return other.correct_count_ < correct_count_;
   }
-
- // private:
-  void PrintAllIter(int idx);
-  void TestAllIter(int idx);
 
   vector<Gate*> inputs_;
   vector<Gate*> outputs_;
@@ -62,6 +59,7 @@ class Circuit {
 
   vector<vector<string>> truth_table_str_;
   int correct_count_;
+  bool bad_ = false;
 };
 
 #endif

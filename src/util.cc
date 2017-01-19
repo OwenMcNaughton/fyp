@@ -72,3 +72,11 @@ map<vector<int>, vector<pair<string, int>>> FormatTruthTable(
   }
   return truth_table_ret;
 }
+
+void SaveDotGraph(Circuit* circ, int id) {
+  circ->TestAll();
+  char s[50];
+  sprintf(s, "graphs/%05d.gv", id);
+  string filename = s;
+  WriteFile(filename, circ->DotGraph());
+}

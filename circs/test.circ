@@ -1,0 +1,12 @@
+in a
+in b
+in c
+in d
+out x
+out y
+out z
+out w
+and AND
+~
+a -> and
+and -> x,y,z,w

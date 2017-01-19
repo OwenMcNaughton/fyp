@@ -15,7 +15,7 @@ map<string, string> Gate::kDotGraphNodes = {
   {kAnd, "[shape=invhouse,color=forestgreen,penwidth=2]"},
   {kOrr, "[shape=invtriangle,color=darkorchid,penwidth=2]"},
   {kXor, "[shape=invtriangle,peripheries=2,color=red,penwidth=1]"},
-  {kNot, "[shape=invtriangle,color=gold,penwidth=2,width=.3]"},
+  {kNot, "[shape=invtriangle,color=gold,penwidth=2]"},
   {kOnn, "[shape=circle,color=black,penwidth=2]"},
   {kOff, "[shape=circle,color=black,penwidth=2]"},
   {kBuf, "[shape=circle,color=black,penwidth=2]"}
@@ -47,6 +47,14 @@ void Gate::AddInput(Gate* in) {
   inputs_.push_back(in);
 }
 
+void Gate::ForgetGate(Gate* g) {
+  for (int i = 0; i != inputs_.size(); i++) {
+    if (inputs_[i] == g) {
+      inputs_.erase(inputs_.begin() + i--);
+    }
+  }
+}
+
 bool Gate::FindLoops(set<Gate*>& seen) {
   if (seen.count(this) > 0) {
     return true;
@@ -62,7 +70,6 @@ bool Gate::FindLoops(set<Gate*>& seen) {
 }
 
 int Gate::Compute() {
-  // cout << "\t\t\tCOMPUTE " << name_ << " " << type_ << " " << inputs_.size() << endl;
   if (type_ == kOnn) {
     return kLineOn;
   }
@@ -132,13 +139,6 @@ int Gate::Compute() {
   }
 }
 
-void Gate::PrintLayout(int depth) {
-  string tab = "";
-  for (int i = 0; i != depth; i++) {
-    tab += "  ";
-  }
-  cout << tab << name_ << " " << type_ << " " << inputs_.size() << endl;
-  for (Gate* in : inputs_) {
-    in->PrintLayout(depth + 1);
-  }
+Gate::~Gate() {
+
 }
