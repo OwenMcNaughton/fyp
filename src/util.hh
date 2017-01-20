@@ -11,7 +11,7 @@ using namespace std;
 class Circuit;
 
 const int kGens = 100;
-const int kChildren = 1000;
+const int kChildren = 10;
 const int kMutations = 20;
 const int kPrintRate = 10;
 

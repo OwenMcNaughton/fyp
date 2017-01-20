@@ -9,6 +9,18 @@
 
 using namespace std;
 
+struct Edge {
+  Gate* src_;
+  Gate* dst_;
+  int src_layer_;
+  int dst_layer_;
+
+  Edge(Gate* src, Gate* dst, int src_layer, int dst_layer)
+      : src_(src), dst_(dst), src_layer_(src_layer), dst_layer_(dst_layer) {
+
+  }
+};
+
 class Circuit {
  public:
   Circuit();
@@ -19,8 +31,10 @@ class Circuit {
 
   void AddInput(Gate* g);
   void AddOutput(Gate* g);
-  void AddGate(Gate* g);
-  void AddWire(const string& src, const string& dst);
+  void AddGate(Gate* g, int layer);
+  void AddLayer();
+  void RemoveLayer(int idx);
+  void AddEdge(const string& src, const string& dst);
 
   void TestOne();
   void TestAll();
@@ -31,18 +45,17 @@ class Circuit {
   string DotGraph();
 
   void Mutate();
-
-  void MutateExistingGate();
-  void MutateEdgeSource();
-  void MutateEdgeDestination();
-  void MutateOutputSource();
-  void MutateNewEdge();
   void MutateNewGate();
+  void MutateExistingGate();
   void MutateRemoveGate();
+  void MutateNewEdge();
+  void MutateExistingEdge();
+  void MutateRemoveEdge();
 
   static void Evolve();
-  
+
   bool FindLoops();
+  static int GetDanglingCount(Circuit* circ);
 
   bool operator<(Circuit& other) {
     TestAll();
@@ -52,8 +65,8 @@ class Circuit {
 
   vector<Gate*> inputs_;
   vector<Gate*> outputs_;
-  vector<Gate*> gates_;
-  vector<pair<Gate*, Gate*>> edges_;
+  vector<vector<Gate*>> gates_;
+  vector<Edge*> edges_;
 
   static map<vector<int>, vector<pair<string, int>>> kTruthTable;
 
