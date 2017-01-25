@@ -1,6 +1,8 @@
-CMakeFiles
 graphs
-cmake_install.cmake
-CMakeCache.txt
-Makefile
-main
+release/CMakeFiles
+release/cmake_install.cmake
+release/CMakeCache.txt
+release/Makefile
+release/main
+release/libCircLib.a
+release/.output

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -56,27 +57,28 @@ void WriteFile(const string& filename, const string& contents) {
   out.close();
 }
 
-map<vector<int>, vector<pair<string, int>>> FormatTruthTable(
+map<vector<int>, map<string, int>> FormatTruthTable(
     vector<vector<string>>& truth_table, int input_count) {
-  map<vector<int>, vector<pair<string, int>>> truth_table_ret;
-  for (int i = 0; i != truth_table.size(); i++) {
+  map<vector<int>, map<string, int>> truth_table_ret;
+  for (int i = 1; i != truth_table.size(); i++) {
     vector<int> ins;
     for (int j = 0; j != input_count; j++) {
       ins.push_back(atoi(truth_table[i][j].c_str()));
     }
-    vector<pair<string, int>> expecteds;
+    map<string, int> expecteds;
     for (int j = input_count; j != truth_table[0].size(); j++) {
-      expecteds.push_back(make_pair(truth_table[0][j], atoi(truth_table[i][j].c_str())));
+      expecteds[truth_table[0][j]] = atoi(truth_table[i][j].c_str());
     }
     truth_table_ret.emplace(ins, expecteds);
   }
   return truth_table_ret;
 }
 
-void SaveDotGraph(Circuit* circ, int id) {
+void SaveDotGraph(Circuit* circ, string folder, int id) {
   circ->TestAll();
   char s[50];
-  sprintf(s, "graphs/%05d.gv", id);
-  string filename = s;
+  sprintf(s, "%05d.gv", id);
+  mkdir(folder.c_str(), ACCESSPERMS);
+  string filename = folder + s;
   WriteFile(filename, circ->DotGraph());
 }

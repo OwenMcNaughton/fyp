@@ -3,15 +3,15 @@
 #include <iostream>
 
 
-string Gate::kNot = "NOT", Gate::kAnd = "AND",
-  Gate::kOrr = "ORR", Gate::kNnd = "NND", Gate::kXor = "XOR",
-  Gate::kOnn = "ONN", Gate::kOff = "OFF", Gate::kBuf = "BUF";
+int Gate::kNot = 0, Gate::kAnd = 1,
+  Gate::kOrr = 2, Gate::kXor = 3, Gate::kNnd = 4,
+  Gate::kOnn = 5, Gate::kOff = 6, Gate::kBuf = 7;
 
-vector<string> Gate::kGates = {kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf};
+vector<int> Gate::kGates = {kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf};
 
 int Gate::kLineOn = 1, Gate::kLineOff = -1, Gate::kLineUnknown = 0;
 
-map<string, string> Gate::kDotGraphNodes = {
+map<int, string> Gate::kDotGraphNodes = {
   {kAnd, "[shape=invhouse,color=forestgreen,penwidth=2]"},
   {kOrr, "[shape=invtriangle,color=darkorchid,penwidth=2]"},
   {kXor, "[shape=invtriangle,peripheries=2,color=red,penwidth=1]"},
@@ -21,13 +21,13 @@ map<string, string> Gate::kDotGraphNodes = {
   {kBuf, "[shape=circle,color=black,penwidth=2]"}
 };
 
-Gate::Gate(const string& type, string name)
-    : type_(type), name_(name) {
+Gate::Gate(int type, string name, int layer)
+    : type_(type), name_(name), layer_(layer) {
 
 }
 
 Gate* Gate::Copy(map<string, Gate*>& table) {
-  Gate* g = new Gate(type_, name_);
+  Gate* g = new Gate(type_, name_, layer_);
   for (Gate* in : inputs_) {
     if (table.count(in->name_)) {
       g->AddInput(table[in->name_]);
@@ -136,6 +136,17 @@ int Gate::Compute() {
     } else {
       return kLineUnknown;
     }
+  }
+}
+
+void Gate::PrintLayout(int depth) {
+  string tab = "";
+  for (int i = 0; i != depth; i++) {
+    tab += "  ";
+  }
+  cout << tab << name_ << " " << type_ << " " << inputs_.size() << endl;
+  for (Gate* in : inputs_) {
+    in->PrintLayout(depth + 1);
   }
 }
 

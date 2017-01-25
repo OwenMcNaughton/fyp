@@ -1,5 +1,5 @@
 cmake . && make && ./main &&
-for file in ./graphs/*.gv
+for file in $(find ../graphs -name '*.gv');
 do
   dot -Tsvg -o"$file".svg "$file"
 done

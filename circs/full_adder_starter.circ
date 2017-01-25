@@ -1,23 +1,11 @@
-xor1 XOR
-xor2 XOR
-and1 AND
-and2 AND
-orr1 ORR
-n1 NOT
-n2 NOT
-in a
-in b
-in cin
-out s
-out cout
+a,b,cin
+s,cout
+xor1 3,and1 1
+and2 1,xor2 3
+orr 2,
 ~
-a -> xor1, and1
-b -> xor1, and1
-cin -> and2, xor2
-xor1 -> xor2, and2
-and1 -> orr1
-and2 -> orr1
-xor2 -> n1
-orr1 -> n2
-n1 -> s
-n2 -> cout
+a -> xor1
+b -> xor1
+cin -> and2
+xor1 -> and2
+and2 -> orr

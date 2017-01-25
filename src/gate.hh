@@ -10,7 +10,7 @@ using namespace std;
 
 class Gate {
  public:
-  Gate(const string& type, string name);
+  Gate(int type, string name, int layer);
   ~Gate();
   Gate* Copy(map<string, Gate*>& table);
 
@@ -22,15 +22,18 @@ class Gate {
 
   bool FindLoops(set<Gate*>& seen);
 
-  static string kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf;
+  void PrintLayout(int i);
+
+  static int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf;
   static int kLineOn, kLineOff, kLineUnknown;
-  static vector<string> kGates;
-  static map<string, string> kDotGraphNodes;
+  static vector<int> kGates;
+  static map<int, string> kDotGraphNodes;
 
   vector<Gate*> inputs_;
   Gate* output_;
-  string type_;
+  int type_;
   string name_;
+  int layer_;
 };
 
 #endif

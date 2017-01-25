@@ -3,6 +3,7 @@
 
 #include "gate.hh"
 #include <map>
+#include <set>
 #include <string>
 #include "util.hh"
 #include <vector>
@@ -24,17 +25,28 @@ struct Edge {
 class Circuit {
  public:
   Circuit();
+  Circuit(const string& contents);
   ~Circuit();
   Circuit* Copy();
 
-  void SetTruthTable(vector<vector<string>>& truth_table);
-
   void AddInput(Gate* g);
   void AddOutput(Gate* g);
-  void AddGate(Gate* g, int layer);
+  void AddGate(Gate* g);
+  void RemoveGate(const string& name);
   void AddLayer();
   void RemoveLayer(int idx);
   void AddEdge(const string& src, const string& dst);
+  void AddEdge(Gate* src, Gate* dst);
+  void RemoveEdge(const string& name);
+  void RemoveEdge(Gate* node);
+
+  Gate* PickRandomFromInputs();
+  Gate* PickRandomFromOutputs();
+  Gate* PickRandomFromLayersStartingFrom(int layer);
+  Gate* PickRandomFromLayersEndingBefore(int layer);
+  Gate* PickRandomEdgeSrc(int end_before);
+  Gate* PickRandomEdgeDst(int start_at);
+  pair<Gate*, Gate*> MakeRandomEdge();
 
   void TestOne();
   void TestAll();
@@ -43,8 +55,12 @@ class Circuit {
   void Load(const string& filename);
   string Serialize();
   string DotGraph();
+  string PrintTruth();
+  void PrintLayout();
 
   void Mutate();
+  void MutationSeries();
+  void MutateNewLayer();
   void MutateNewGate();
   void MutateExistingGate();
   void MutateRemoveGate();
@@ -53,9 +69,14 @@ class Circuit {
   void MutateRemoveEdge();
 
   static void Evolve();
+  static void MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen);
+  static Circuit* GetBestChild(vector<Circuit*>& children);
 
   bool FindLoops();
   static int GetDanglingCount(Circuit* circ);
+  int SuperfluousScore();
+  long Hash();
+  void Sanitize();
 
   bool operator<(Circuit& other) {
     TestAll();
@@ -68,10 +89,13 @@ class Circuit {
   vector<vector<Gate*>> gates_;
   vector<Edge*> edges_;
 
-  static map<vector<int>, vector<pair<string, int>>> kTruthTable;
+  static map<vector<int>, map<string, int>> kTruthTable;
+  map<vector<int>, map<string, int>> ephemeral_truth_;
 
-  vector<vector<string>> truth_table_str_;
+  static set<long> hashes;
+
   int correct_count_;
+  int superfluous_score_;
   bool bad_ = false;
 };
 

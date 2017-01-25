@@ -1,5 +1,6 @@
 #include "circuit.hh"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <set>
@@ -7,10 +8,15 @@
 
 using namespace std;
 
-map<vector<int>, vector<pair<string, int>>> Circuit::kTruthTable = {};
+map<vector<int>, map<string, int>> Circuit::kTruthTable = {};
+set<long> Circuit::hashes = {};
 
 Circuit::Circuit() {
 
+}
+
+Circuit::Circuit(const string& contents) {
+  Load(contents);
 }
 
 Circuit* Circuit::Copy() {
@@ -20,22 +26,42 @@ Circuit* Circuit::Copy() {
 }
 
 void Circuit::Mutate() {
-  int mutation_type = rand() % 7;
-  cout << mutation_type << endl;
+  int mutation_type = rand() % 2 + 3;
   switch (mutation_type) {
     // case 0: MutateNewGate(); break;
     // case 1: MutateExistingGate(); break;
     // case 2: MutateRemoveGate(); break;
-    // case 3: MutateNewEdge(); break;
-    // case 4: MutateExistingEdge(); break;
-    // case 5: MutateRemoveEdge(); break;
+    case 3: MutateNewEdge(); break;
+    case 4: MutateRemoveEdge(); break;
   }
 }
 
+void Circuit::MutationSeries() {
+  int new_gate_count = rand() % 5 + 1;
+  int del_edge_count = rand() % 9 + 1;
+  int new_edge_count = rand() % 9 + 1;
+  for (int i = 0; i != new_gate_count; i++) {
+    MutateNewGate();
+  }
+  for (int i = 0; i != del_edge_count; i++) {
+    MutateRemoveEdge();
+  }
+  for (int i = 0; i != new_edge_count; i++) {
+    MutateNewEdge();
+  }
+}
+
+void Circuit::MutateNewLayer() {
+  AddLayer();
+}
+
 void Circuit::MutateNewGate() {
-  Gate* g = new Gate(Gate::kGates[rand() % 4], to_string(rand()));
+  if (gates_.empty()) {
+    MutateNewLayer();
+  }
   int layer = rand() % gates_.size();
-  AddGate(g, layer);
+  Gate* g = new Gate(Gate::kGates[rand() % 4], to_string(rand()), layer);
+  AddGate(g);
 }
 
 void Circuit::MutateExistingGate() {
@@ -61,32 +87,7 @@ void Circuit::MutateRemoveGate() {
     return;
   }
   int idx = rand() % gates_[layer].size();
-  Gate* to_remove = gates_[layer][idx];
-  for (int i = 0; i < edges_.size(); i++) {
-    if (edges_[i]->src_ == to_remove || edges_[i]->dst_ == to_remove) {
-      for (int j = 0; j < edges_[i]->dst_->inputs_.size(); j++) {
-        if (edges_[i]->dst_->inputs_[j] == to_remove) {
-          edges_[i]->dst_->inputs_.erase(edges_[i]->dst_->inputs_.begin() + j);
-        }
-      }
-      edges_.erase(edges_.begin() + i--);
-    }
-  }
-
-  for (auto v : gates_) {
-    for (Gate* g : v) {
-      g->ForgetGate(gates_[layer][idx]);
-    }
-  }
-  for (Gate* g : inputs_) {
-    g->ForgetGate(gates_[layer][idx]);
-  }
-  for (Gate* g : outputs_) {
-    g->ForgetGate(gates_[layer][idx]);
-  }
-
-  delete gates_[layer][idx];
-  gates_[layer].erase(gates_[layer].begin() + idx);
+  RemoveGate(gates_[layer][idx]->name_);
 }
 
 void Circuit::MutateNewEdge() {
@@ -94,114 +95,59 @@ void Circuit::MutateNewEdge() {
     return;
   }
 
-  int src_layer = rand() % gates_.size() == 0 ? -1 : rand() % gates_.size();
-  Gate* src = nullptr;
-  if (src_layer == -1) {
-    src = inputs_[rand() % inputs_.size()];
-  } else {
-    if (gates_[src_layer].empty()) {
-      return;
-    }
-    src = gates_[src_layer][rand() % gates_[src_layer].size()];
-  }
+  auto edge = MakeRandomEdge();
 
-  Gate* dst = nullptr;
-  int dst_layer = -2;
-  if (src_layer == -1) {
-    if (rand() % gates_.size() == 0) {
-      dst = outputs_[rand() % outputs_.size()];
-    } else {
-      dst_layer = rand() % gates_.size();
-      if (gates_[dst_layer].empty()) {
+  if (edge.first && edge.second) {
+    for (Gate* g : edge.second->inputs_) {
+      if (g == edge.first) {
         return;
       }
-      dst = gates_[dst_layer][rand() % gates_[dst_layer].size()];
     }
-  } else if (src_layer == gates_.size() - 1) {
-    dst = outputs_[rand() % outputs_.size()];
-  } else {
-    if (rand() % gates_.size() == 0) {
-      dst = outputs_[rand() % outputs_.size()];
-    } else {
-      dst_layer = rand() % (gates_.size() - src_layer - 1) + src_layer + 1;
-      if (gates_[dst_layer].empty()) {
-        return;
-      }
-      dst = gates_[dst_layer][rand() % gates_[dst_layer].size()];
-    }
-  }
-  dst->inputs_.push_back(src);
-
-  Edge* edge = new Edge(src, dst, src_layer, dst_layer);
-  edges_.push_back(edge);
-}
-
-void Circuit::MutateExistingEdge() {
-  if (edges_.empty() || gates_.empty()) {
-    return;
-  }
-
-  Edge* edge = edges_[rand() % edges_.size()];
-
-  if (rand() % 2 == 0) {
-    Gate* src = nullptr;
-    int src_layer = -1;
-    if (rand() % gates_.size() == 0 || edge->dst_layer_ == 0) {
-      // source = input
-      if (inputs_.empty()) {
-        return;
-      }
-      src = inputs_[rand() % inputs_.size()];
-    } else {
-      // source = before dst layer
-      src_layer = rand() % edge->dst_layer_;
-      if (gates_[src_layer].empty()) {
-        return;
-      }
-      src = gates_[src_layer][rand() % gates_[src_layer].size()];
-    }
-
-    for (int i = 0; i < edge->dst_->inputs_.size(); i++) {
-      if (edge->dst_->inputs_[i] == edge->src_) {
-        edge->dst_->inputs_.erase(edge->dst_->inputs_.begin() + i--);
-      }
-    }
-    edge->src_ = src;
-    edge->src_layer_ = src_layer;
-    edge->dst_->inputs_.push_back(src);
-
-  } else {
-    Gate* dst = nullptr;
-    int dst_layer = -2;
-    if (rand() % gates_.size() == 0 || edge->src_layer_ == gates_.size() - 1) {
-      // dst = output
-      if (outputs_.empty()) {
-        return;
-      }
-      dst = outputs_[rand() % outputs_.size()];
-    } else {
-      // dst = after src layer
-      dst_layer = rand() % (gates_.size() - edge->src_layer_ - 1) + edge->src_layer_ + 1;
-      if (gates_[dst_layer].empty()) {
-        return;
-      }
-      dst = gates_[dst_layer][rand() % gates_[dst_layer].size()];
-    }
-
-    for (int i = 0; i < edge->dst_->inputs_.size(); i++) {
-      if (edge->dst_->inputs_[i] == edge->src_) {
-        edge->dst_->inputs_.erase(edge->dst_->inputs_.begin() + i);
-      }
-    }
-    edge->dst_ = dst;
-    edge->dst_layer_ = dst_layer;
-    edge->dst_->inputs_.push_back(edge->src_);
-
+    AddEdge(edge.first, edge.second);
   }
 }
 
 void Circuit::MutateRemoveEdge() {
+  if (edges_.empty()) {
+    return;
+  }
+  Edge* e = edges_[rand() % edges_.size()];
+  for (int j = 0; j < e->dst_->inputs_.size(); j++) {
+    if (e->dst_->inputs_[j] == e->src_) {
+      e->dst_->inputs_.erase(e->dst_->inputs_.begin() + j);
+    }
+  }
+  for (int i = 0; i < edges_.size(); i++) {
+    if (edges_[i] == e) {
+      edges_.erase(edges_.begin() + i--);
+    }
+  }
+}
 
+void Circuit::RemoveEdge(const string& name) {
+  for (int i = 0; i < edges_.size(); i++) {
+    if (edges_[i]->src_->name_ == name || edges_[i]->dst_->name_ == name) {
+      for (int j = 0; j < edges_[i]->dst_->inputs_.size(); j++) {
+        if (edges_[i]->dst_->inputs_[j]->name_ == name) {
+          edges_[i]->dst_->inputs_.erase(edges_[i]->dst_->inputs_.begin() + j);
+        }
+      }
+      edges_.erase(edges_.begin() + i--);
+    }
+  }
+}
+
+void Circuit::RemoveEdge(Gate* node) {
+  for (int i = 0; i < edges_.size(); i++) {
+    if (edges_[i]->src_ == node || edges_[i]->dst_ == node) {
+      for (int j = 0; j < edges_[i]->dst_->inputs_.size(); j++) {
+        if (edges_[i]->dst_->inputs_[j] == node) {
+          edges_[i]->dst_->inputs_.erase(edges_[i]->dst_->inputs_.begin() + j);
+        }
+      }
+      edges_.erase(edges_.begin() + i--);
+    }
+  }
 }
 
 bool Circuit::FindLoops() {
@@ -226,11 +172,53 @@ int Circuit::GetDanglingCount(Circuit* circ) {
   return dangling_count;
 }
 
+int Circuit::SuperfluousScore() {
+  int score = 0;
+  set<Gate*> connected_gates;
+  for (Gate* out : outputs_) {
+    out->FindLoops(connected_gates);
+  }
+  for (auto layer : gates_) {
+    for (Gate* g : layer) {
+      if (connected_gates.count(g) == 0) {
+        score++;
+      }
+    }
+  }
+  return score;
+}
+
+void Circuit::Sanitize() {
+  set<Gate*> connected_gates;
+  for (Gate* out : outputs_) {
+    out->FindLoops(connected_gates);
+  }
+  for (auto layer : gates_) {
+    for (Gate* g : layer) {
+      if (connected_gates.count(g) == 0 || g->inputs_.empty()) {
+        RemoveGate(g->name_);
+      }
+    }
+  }
+}
+
+long Circuit::Hash() {
+  long hash = 37;
+  for (auto layer : gates_) {
+    for (Gate* g : layer) {
+      hash = hash * 37 + g->type_;
+    }
+  }
+  for (auto edge : edges_) {
+    hash = hash * 37 + edge->src_->type_;
+    hash = hash * 37 + edge->dst_->type_;
+  }
+  return hash;
+}
+
 void Circuit::Evolve() {
   Circuit* circ = new Circuit();
-  circ->Load(ReadFile("circs/full_adder.circ"));
-
-  return;
+  circ->Load(ReadFile("../circs/full_adder_starter.circ"));
 
   vector<vector<string>> truth_table = {
     {"a", "b", "cin", "s", "cout"},
@@ -245,57 +233,75 @@ void Circuit::Evolve() {
   };
 
   Circuit::kTruthTable = FormatTruthTable(truth_table, 3);
-  SaveDotGraph(circ, 0);
+  SaveDotGraph(circ, "../graphs/", 0);
+
+  hashes = {};
 
   for (int i = 0; i != kGens; i++) {
     cout << "GEN: " << i << endl;
     vector<Circuit*> children;
-    for (int j = 0; j != kChildren; j++) {
-      Circuit* child = circ->Copy();
-      int m = rand() % kMutations;
-      for (int k = 0; k != m; k++) {
-        child->Mutate();
-      }
-      cout << "\t\t\t\t" << child->edges_.size() << endl;
-      if (!child->FindLoops()) {
-        children.push_back(child);
-      }
-    }
+    MakeChildren(circ, children, i);
 
-    int correct_max = -1;
-    for (int j = 0; j != children.size(); j++) {
-      children[j]->TestAll();
-      if (!children[j]->bad_) {
-        if (children[j]->correct_count_ > correct_max) {
-          correct_max = children[j]->correct_count_;
-        }
-      }
-    }
+    Circuit* best = GetBestChild(children);
+    // best->Sanitize();
 
-    int gate_min = 9999999999;
-    int maxidx = -1;
-    vector<Circuit*> good_circs;
-    for (int j = 0; j != children.size(); j++) {
-      if (children[j]->correct_count_ == correct_max) {
-        int dangling_count = GetDanglingCount(children[j]);
-        if (dangling_count < 4) {
-          good_circs.push_back(children[j]);
-        }
-      }
-    }
-
-    Circuit* best = good_circs[rand() % good_circs.size()];
-
-    if (circ->correct_count_ <= best->correct_count_) {
-      circ = best->Copy();
-      circ->TestAll();
-      SaveDotGraph(best, i + 1);
-    }
+    circ = best->Copy();
+    circ->TestAll();
+    SaveDotGraph(circ, "../graphs/", i + 1);
 
     for (int j = 0; j < children.size(); j++) {
       delete children[j];
     }
   }
+}
+
+void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen) {
+  int dupes = 0;
+  children.push_back(parent->Copy());
+  for (int j = 0; j != kChildren; j++) {
+    Circuit* child = parent->Copy();
+    int m = rand() % kMutations;
+    for (int k = 0; k != m; k++) {
+      child->Mutate();
+    }
+    long hash = child->Hash();
+    if (hashes.count(hash) == 0) {
+      children.push_back(child);
+      hashes.insert(hash);
+    } else {
+      dupes++;
+      if (dupes > 100000) {
+        exit(0);
+      }
+      delete child;
+      j--;
+    }
+  }
+}
+
+struct CircuitSuperfluousSort {
+  inline bool operator() (Circuit* circ1, Circuit* circ2) {
+    return circ1->SuperfluousScore() < circ2->SuperfluousScore();
+  }
+};
+
+struct CircuitTruthSort {
+  inline bool operator() (Circuit* circ1, Circuit* circ2) {
+    return circ1->correct_count_ > circ2->correct_count_;
+  }
+};
+
+Circuit* Circuit::GetBestChild(vector<Circuit*>& children) {
+  int correct_max = -1;
+  for (int j = 0; j != children.size(); j++) {
+    children[j]->TestAll();
+  }
+
+  sort(children.begin(), children.end(), CircuitTruthSort());
+  sort(children.begin(), children.begin() + children.size() / 10,
+    CircuitSuperfluousSort());
+
+  return children[0];
 }
 
 void Circuit::AddInput(Gate* g) {
@@ -306,8 +312,43 @@ void Circuit::AddOutput(Gate* g) {
   outputs_.push_back(g);
 }
 
-void Circuit::AddGate(Gate* g, int layer) {
-  gates_[layer].push_back(g);
+void Circuit::AddGate(Gate* g) {
+  gates_[g->layer_].push_back(g);
+}
+
+void Circuit::RemoveGate(const string& name) {
+  Gate* to_remove = NULL;
+  int layer = 0;
+  int idx = 0;
+  bool breaker = false;
+  for (auto v : gates_) {
+    idx = 0;
+    for (Gate* g : v) {
+      if (g->name_ == name) {
+        to_remove = g;
+        breaker = true;
+        break;
+      }
+      idx++;
+    }
+    if (breaker) {
+      break;
+    }
+    layer++;
+  }
+
+  RemoveEdge(to_remove);
+
+  delete to_remove;
+  gates_[layer].erase(gates_[layer].begin() + idx);
+  if (gates_[layer].empty()) {
+    // gates_.erase(gates_.begin() + layer);
+  }
+}
+
+void Circuit::AddLayer() {
+  vector<Gate*> layer;
+  gates_.push_back(layer);
 }
 
 void Circuit::TestOne() {
@@ -319,7 +360,9 @@ void Circuit::TestOne() {
     key.push_back(res);
   }
 
-  vector<pair<string, int>> val = kTruthTable[key];
+  ephemeral_truth_[key] = map<string, int>();
+
+  map<string, int> val = kTruthTable[key];
   int count = 0;
   for (auto expected : val) {
     for (Gate* g : outputs_) {
@@ -333,6 +376,7 @@ void Circuit::TestOne() {
         if (res == expected.second) {
           count++;
         }
+        ephemeral_truth_[key][g->name_] = res;
       }
     }
   }
@@ -344,6 +388,7 @@ void Circuit::TestOne() {
 
 void Circuit::TestAll() {
   correct_count_ = 0;
+  superfluous_score_ = SuperfluousScore();
   TestAllIter(0);
 }
 
@@ -367,7 +412,7 @@ void Circuit::AddEdge(const string& src, const string& dst) {
 
   int layer = 0;
   int src_layer = -1;
-  int dst_layer = -2;
+  int dst_layer = gates_.size();
   for (auto v : gates_) {
     for (Gate* g : v) {
       if (g->name_ == src) {
@@ -392,57 +437,61 @@ void Circuit::AddEdge(const string& src, const string& dst) {
   }
 
   if (src_gate == NULL) {
-    cout << "src_gate: " << src << " not found" << endl;
-    return;
+    cout << "\t!! [" << src << "] -> " << dst << " not found" << endl;
     exit(1);
   }
   if (dst_gate == NULL) {
-    cout << "dst_gate: " << dst << " not found" << endl;
-    return;
+    cout << "\t!! " << src << " -> [" << dst << "] not found" << endl;
     exit(1);
   }
-  edges_.push_back(new Edge(src_gate, dst_gate, src_layer, dst_layer));
-  dst_gate->AddInput(src_gate);
+  AddEdge(src_gate, dst_gate);
+}
+
+void Circuit::AddEdge(Gate* src, Gate* dst) {
+  edges_.push_back(new Edge(src, dst, src->layer_, dst->layer_));
+  dst->AddInput(src);
 }
 
 void Circuit::Load(const string& contents) {
   vector<string> split = Split(contents, "~");
-  vector<string> nodes = Split(split[0], ";");
+  vector<string> nodes = Split(split[0], "\n");
   vector<string> inputs = Split(nodes[0], ",");
-  vector<string> layers = Split(nodes[1].substr(1), "\n");
-  vector<string> outputs = Split(nodes[2], ",");
+  vector<string> outputs = Split(nodes[1], ",");
   vector<string> edges = Split(split[1], "\n");
 
   for (auto s : inputs) {
-    Gate* g = new Gate(Gate::kOnn, s);
+    Gate* g = new Gate(Gate::kOnn, s, -1);
     AddInput(g);
   }
-  for (auto s : outputs) {
-    Gate* g = new Gate(Gate::kOnn, Strip(s, '\n'));
-    AddOutput(g);
-  }
-  int i = 0;
-  for (auto l : layers) {
+  for (int i = 2; i != nodes.size(); i++) {
+    vector<string> gates = Split(Strip(nodes[i], '\n'), ",");
+    if (gates[0].size() < 1) {
+      continue;
+    }
     vector<Gate*> layer;
     gates_.push_back(layer);
-    vector<string> gates = Split(Strip(l, '\n'), ",");
     for (auto s : gates) {
       vector<string> node = Split(s, " ");
-      Gate* g = new Gate(node[1], node[0]);
-      AddGate(g, i);
+      if (node.size() < 2) {
+        continue;
+      }
+      Gate* g = new Gate(atoi(node[1].c_str()), node[0], i - 2);
+      AddGate(g);
     }
-    i++;
+  }
+  for (auto s : outputs) {
+    Gate* g = new Gate(Gate::kBuf, Strip(s, '\n'), nodes.size() - 2);
+    AddOutput(g);
   }
 
   for (auto s : edges) {
-    vector<string> edge = Split(s, "->");
+        vector<string> edge = Split(s, "->");
     if (edge.size() < 2) {
       continue;
     }
     string src = Strip(edge[0], ' ');
     vector<string> dsts = Split(edge[1], ",");
     for (string dst : dsts) {
-      cout << src << " -> " << Strip(dst, ' ' ) << endl;
       AddEdge(src, Strip(dst, ' '));
     }
   }
@@ -452,20 +501,26 @@ string Circuit::Serialize() {
   string s = "";
   for (Gate* g : inputs_) {
     s += g->name_ ;
-    s += g == inputs_.back() ? ";\n" : ",";
-  }
-
-  for (auto v : gates_) {
-    for (Gate* g : v) {
-      s += g->name_ + " " + g->type_;
-      s += g == gates_.back().back() ? ";" : "";
-      s += g == v.back() ? "\n" : ",";
-    }
+    s += g == inputs_.back() ? "\n" : ",";
   }
 
   for (Gate* g : outputs_) {
     s += g->name_;
-    s += g == outputs_.back() ? ";\n" : ",";
+    s += g == outputs_.back() ? "\n" : ",";
+  }
+
+  for (int layer = 0; layer < gates_.size(); layer++) {
+    for (int gate = 0; gate < gates_[layer].size(); gate++) {
+      s += gates_[layer][gate]->name_ + " " + to_string(gates_[layer][gate]->type_);
+      if (gate == gates_[layer].size() - 1 && layer != gates_.size() - 1) {
+        s += "\n";
+      } else {
+        s += ",";
+      }
+    }
+    if (layer == gates_.size() - 1) {
+      s += "\n";
+    }
   }
 
   s += "~\n";
@@ -482,13 +537,14 @@ string Circuit::Serialize() {
       s += in->name_ + " -> " + g->name_ + "\n";
     }
   }
+
   return s;
 }
 
 string Circuit::DotGraph() {
   string dotgraph = "digraph {\n";
-  int out_of = pow(2, inputs_.size()) * outputs_.size();
-  dotgraph += "labelloc=\"t\"\nlabel=\"" +
+  int out_of = pow(2, inputs_.size());
+  dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
     to_string(correct_count_) + " / " + to_string(out_of) + "\"\n";
   for (auto v : gates_) {
     for (Gate* g : v) {
@@ -512,6 +568,93 @@ string Circuit::DotGraph() {
   return dotgraph;
 }
 
+void Circuit::PrintLayout() {
+  for (Gate* in : outputs_) {
+    cout << "OUTPUT: " << in->name_ << endl;
+    in->PrintLayout(1);
+  }
+}
+
+string Circuit::PrintTruth() {
+  string truth = "";
+  for (Gate* g : inputs_) {
+    truth += g->name_ + ",";
+  }
+  for (Gate* g : outputs_) {
+    truth += g->name_ + ",";
+  }
+  truth += "\n";
+  for (auto p : ephemeral_truth_) {
+    for (int i : p.first) {
+      truth += to_string(i) + " ";
+    }
+    for (Gate* g : outputs_) {
+      truth += to_string(p.second[g->name_]) + " ";
+    }
+    bool all_correct = true;
+    for (auto result : kTruthTable[p.first]) {
+      if (ephemeral_truth_[p.first][result.first] != result.second) {
+        all_correct = false;
+      }
+    }
+    truth += all_correct ? "+" : "-";
+    truth += "\n";
+  }
+  return truth;
+}
+
+Gate* Circuit::PickRandomFromInputs() {
+  return inputs_[rand() % inputs_.size()];
+}
+
+Gate* Circuit::PickRandomFromOutputs() {
+  return outputs_[rand() % outputs_.size()];
+}
+
+Gate* Circuit::PickRandomFromLayersStartingFrom(int layer) {
+  auto picked_layer = gates_[rand() % (gates_.size() - layer) + layer];
+  if (picked_layer.empty()) {
+    return nullptr;
+  }
+  return picked_layer[rand() % picked_layer.size()];
+}
+
+Gate* Circuit::PickRandomFromLayersEndingBefore(int layer) {
+  auto picked_layer = gates_[rand() % gates_.size()];
+  if (picked_layer.empty()) {
+    return nullptr;
+  }
+  return picked_layer[rand() % picked_layer.size()];
+}
+
+Gate* Circuit::PickRandomEdgeSrc(int end_before) {
+  if (rand() % gates_.size() == 0) {
+    return PickRandomFromInputs();
+  } else {
+    return PickRandomFromLayersEndingBefore(end_before);
+  }
+}
+
+Gate* Circuit::PickRandomEdgeDst(int start_at) {
+  if (rand() % gates_.size() == 0 || start_at == gates_.size()) {
+    return PickRandomFromOutputs();
+  } else {
+    return PickRandomFromLayersStartingFrom(start_at == -1 ? 0 : start_at);
+  }
+}
+
+pair<Gate*, Gate*> Circuit::MakeRandomEdge() {
+  Gate* src = PickRandomEdgeSrc(gates_.size());
+  if (!src) {
+    return make_pair(nullptr, nullptr);
+  }
+  Gate* dst = PickRandomEdgeDst(src->layer_ + 1);
+  if (dst && dst->type_ == Gate::kBuf && !dst->inputs_.empty()) {
+    dst = nullptr;
+  }
+  return make_pair(src, dst);
+}
+
 Circuit::~Circuit() {
   for (auto v : gates_) {
     for (Gate* g : v) {
@@ -523,5 +666,8 @@ Circuit::~Circuit() {
   }
   for (Gate* g : outputs_) {
     delete g;
+  }
+  for (Edge* e : edges_) {
+    delete e;
   }
 }
