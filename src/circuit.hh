@@ -97,6 +97,7 @@ class Circuit {
   static set<long> hashes;
 
   int correct_count_;
+  int total_count_;
   int superfluous_score_;
   bool bad_ = false;
 };

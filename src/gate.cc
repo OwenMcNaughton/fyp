@@ -23,7 +23,7 @@ map<int, string> Gate::kDotGraphNodes = {
 };
 
 Gate::Gate(int type, string name, int layer)
-    : type_(type), name_(name), layer_(layer) {
+    : type_(type), name_(name), layer_(layer), computed_(false) {
 
 }
 
@@ -71,85 +71,113 @@ bool Gate::FindLoops(set<Gate*>& seen) {
 }
 
 int Gate::Compute() {
+  if (computed_) {
+    return stored_answer_;
+  }
+  computed_ = true;
+
   if (type_ == kOnn) {
-    return kLineOn;
+    stored_answer_ = kLineOn;
+    return stored_answer_;
   }
   if (type_ == kOff) {
-    return kLineOff;
+    stored_answer_ = kLineOff;
+    return stored_answer_;
   }
   if (type_ == kNot) {
     if (inputs_.size() != 1) {
-      return kLineUnknown;
+      stored_answer_ = kLineUnknown;
+      return stored_answer_;
     } else {
-      return -inputs_[0]->Compute();
+      stored_answer_ = -inputs_[0]->Compute();
+      return stored_answer_;
     }
   }
   if (type_ == kAnd) {
     if (inputs_.empty()) {
-      return kLineUnknown;
+      stored_answer_ = kLineUnknown;
+      return stored_answer_;
     } else {
       for (Gate* in : inputs_) {
-        if (in->Compute() == kLineOff) {
-          return kLineOff;
-        } else if (in->Compute() == kLineUnknown) {
-          return kLineUnknown;
+        int res = in->Compute();
+        if (res == kLineOff) {
+          stored_answer_ = kLineOff;
+          return stored_answer_;
+        } else if (res == kLineUnknown) {
+          stored_answer_ = kLineUnknown;
+          return stored_answer_;
         }
       }
-      return kLineOn;
+      stored_answer_ = kLineOn;
+      return stored_answer_;
     }
   }
   if (type_ == kNnd) {
     if (inputs_.empty()) {
-      return kLineUnknown;
+      stored_answer_ = kLineUnknown;
+      return stored_answer_;
     } else {
       for (Gate* in : inputs_) {
-        if (in->Compute() == kLineOff) {
-          return kLineOn;
-        } else if (in->Compute() == kLineUnknown) {
-          return kLineUnknown;
+        int res = in->Compute();
+        if (res == kLineOff) {
+          stored_answer_ = kLineOn;
+          return stored_answer_;
+        } else if (res == kLineUnknown) {
+          stored_answer_ = kLineUnknown;
+          return stored_answer_;
         }
       }
-      return kLineOff;
+      stored_answer_ = kLineOff;
     }
   }
   if (type_ == kOrr) {
     if (inputs_.empty()) {
-      return kLineUnknown;
+      stored_answer_ = kLineUnknown;
     } else {
       for (Gate* in : inputs_) {
-        if (in->Compute() == kLineOn) {
-          return kLineOn;
-        } else if (in->Compute() == kLineUnknown) {
-          return kLineUnknown;
+        int res = in->Compute();
+        if (res == kLineOn) {
+          stored_answer_ = kLineOn;
+          return stored_answer_;
+        } else if (res == kLineUnknown) {
+          stored_answer_ = kLineUnknown;
+          return stored_answer_;
         }
       }
-      return kLineOff;
+      stored_answer_ = kLineOff;
     }
   }
   if (type_ == kXor) {
     if (inputs_.empty()) {
-      return kLineUnknown;
+      stored_answer_ = kLineUnknown;
+      return stored_answer_;
     } else {
       bool one_on = false;
       for (Gate* in : inputs_) {
-        if (in->Compute() == kLineOn) {
+        int res = in->Compute();
+        if (res == kLineOn) {
           if (one_on) {
-            return kLineOff;
+            stored_answer_ = kLineOff;
+            return stored_answer_;
           } else {
             one_on = true;
           }
-        } else if (in->Compute() == kLineUnknown) {
-          return kLineUnknown;
+        } else if (res == kLineUnknown) {
+          stored_answer_ = kLineUnknown;
+          return stored_answer_;
         }
       }
-      return one_on ? kLineOn : kLineOff;
+      stored_answer_ = one_on ? kLineOn : kLineOff;
+      return stored_answer_;
     }
   }
   if (type_ == kBuf) {
     if (inputs_.size() == 1) {
-      return inputs_[0]->Compute();
+      stored_answer_ = inputs_[0]->Compute();
+      return stored_answer_;
     } else {
-      return kLineUnknown;
+      stored_answer_ = kLineUnknown;
+      return stored_answer_;
     }
   }
 }

@@ -197,21 +197,28 @@ long Circuit::Hash() {
 
 void Circuit::Evolve() {
   Circuit* circ = new Circuit();
-  circ->Load(ReadFile("../circs/full_adder_starter.circ"));
+  circ->Load(ReadFile("../circs/2bitmulstarter.circ"));
 
   vector<vector<string>> truth_table = {
-    {"a", "b", "cin", "s", "cout"},
-    {"0","0","0","0","0"},
-    {"0","0","1","1","0"},
-    {"0","1","0","1","0"},
-    {"0","1","1","0","1"},
-    {"1","0","0","1","0"},
-    {"1","0","1","0","1"},
-    {"1","1","0","0","1"},
-    {"1","1","1","1","1"}
-  };
+    {"a1","a0","b1","b0","y3","y2","y1","y0"},
+    {"0","0","0","0","0","0","0","0"},
+    {"0","0","0","1","0","0","0","0"},
+    {"0","0","1","0","0","0","0","0"},
+    {"0","0","1","1","0","0","0","0"},
+    {"0","1","0","0","0","0","0","0"},
+    {"0","1","0","1","0","0","0","1"},
+    {"0","1","1","0","0","0","1","0"},
+    {"0","1","1","1","0","0","1","1"},
+    {"1","0","0","0","0","0","0","0"},
+    {"1","0","0","1","0","0","1","0"},
+    {"1","0","1","0","0","1","0","0"},
+    {"1","0","1","1","0","1","1","0"},
+    {"1","1","0","0","0","0","0","0"},
+    {"1","1","0","1","0","0","1","1"},
+    {"1","1","1","0","0","1","1","0"},
+    {"1","1","1","1","1","0","0","1"}};
 
-  Circuit::kTruthTable = FormatTruthTable(truth_table, 3);
+  Circuit::kTruthTable = FormatTruthTable(truth_table, 4);
   SaveDotGraph(circ, "../graphs/", 0);
 
   hashes = {};
@@ -227,14 +234,13 @@ void Circuit::Evolve() {
     circ->TestAll();
     SaveDotGraph(circ, "../graphs/", i + 1);
 
-    if (circ->correct_count_ == 8) {
+    if (circ->correct_count_ == pow(2, circ->inputs_.size())) {
       exit(0);
     }
 
     for (int j = 0; j < children.size(); j++) {
       delete children[j];
     }
-    if (i == 2) break;
   }
 }
 
@@ -243,8 +249,8 @@ void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen)
   children.push_back(parent->Copy());
   for (int j = 0; j != kChildren; j++) {
     Circuit* child = parent->Copy();
-    int m = rand() % kMutations;
-    for (int k = 0; k != m; k++) {
+    int m = (rand() % kMutations) + 1;
+    for (int k = 0; k != 10; k++) {
       child->Mutate();
     }
     long hash = child->Hash();
@@ -266,7 +272,7 @@ void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen)
 
 struct CircuitTruthSort {
   inline bool operator() (Circuit* circ1, Circuit* circ2) {
-    return circ1->correct_count_ > circ2->correct_count_;
+    return circ1->total_count_ > circ2->total_count_;
   }
 };
 
@@ -330,10 +336,9 @@ void Circuit::AddLayer() {
 
 vector<int> Circuit::VectorizeInputs() {
   vector<int> key;
-  string kk = "";
   for (Gate* g : inputs_) {
+    g->computed_ = false;
     int res = g->Compute() == 1 ? 1 : 0;
-    kk += to_string(res) + " ";
     key.push_back(res);
   }
   return key;
@@ -344,6 +349,12 @@ void Circuit::TestOne() {
 
   ephemeral_truth_[key] = map<string, int>();
   map<string, int> val = kTruthTable[key];
+
+  for (auto& layer : gates_) {
+    for (Gate* g : layer) {
+      g->computed_ = false;
+    }
+  }
 
   int count = 0;
   for (auto& expected : val) {
@@ -362,6 +373,7 @@ void Circuit::TestOne() {
       }
     }
   }
+  total_count_ += count;
 
   if (count == val.size()) {
     correct_count_++;
@@ -387,6 +399,12 @@ void Circuit::FindBestPinningsOne() {
 
   map<string, int> val = kTruthTable[key];
   vector<pair<Gate*, int>> outputs;
+
+  for (auto& layer : gates_) {
+    for (Gate* g : layer) {
+      g->computed_ = false;
+    }
+  }
 
   for (auto& layer : gates_) {
     for (Gate* g : layer) {
@@ -449,6 +467,7 @@ void Circuit::AssignBestPinnings() {
 
 void Circuit::TestAll() {
   correct_count_ = 0;
+  total_count_ = 0;
   FindBestPinningsIter(0);
   AssignBestPinnings();
 
@@ -563,8 +582,10 @@ void Circuit::Load(const string& contents) {
 string Circuit::DotGraph() {
   string dotgraph = "digraph {\n";
   int out_of = pow(2, inputs_.size());
+  int total_out_of = out_of * outputs_.size();
   dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
-    to_string(correct_count_) + " / " + to_string(out_of) + "\"\n";
+    to_string(correct_count_) + " / " + to_string(out_of) + "\n" +
+    to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
   for (auto& v : gates_) {
     for (Gate* g : v) {
       dotgraph += "\t" + g->name_ + " " + Gate::kDotGraphNodes[g->type_] + "\n";
