@@ -1,11 +1,6 @@
 a,b,cin
 s,cout
-xor1 3,and1 1
-and2 1,xor2 3
-orr 2,
+aa 2,ab 2
+ba 2,bb 2
+ca 2,cb 2
 ~
-a -> xor1
-b -> xor1
-cin -> and2
-xor1 -> and2
-and2 -> orr

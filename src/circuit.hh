@@ -48,9 +48,13 @@ class Circuit {
   Gate* PickRandomEdgeDst(int start_at);
   pair<Gate*, Gate*> MakeRandomEdge();
 
-  void TestOne();
+  vector<int> VectorizeInputs();
   void TestAll();
   void TestAllIter(int idx);
+  void TestOne();
+  void FindBestPinningsIter(int idx);
+  void FindBestPinningsOne();
+  void AssignBestPinnings();
 
   void Load(const string& filename);
   string Serialize();
@@ -72,11 +76,8 @@ class Circuit {
   static void MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen);
   static Circuit* GetBestChild(vector<Circuit*>& children);
 
-  bool FindLoops();
   static int GetDanglingCount(Circuit* circ);
-  int SuperfluousScore();
   long Hash();
-  void Sanitize();
 
   bool operator<(Circuit& other) {
     TestAll();
@@ -91,6 +92,8 @@ class Circuit {
 
   static map<vector<int>, map<string, int>> kTruthTable;
   map<vector<int>, map<string, int>> ephemeral_truth_;
+  map<vector<int>, map<string, set<Gate*>>> ephemeral_outputs_;
+  map<string, Gate*> best_pinnings_;
 
   static set<long> hashes;
 

@@ -6,3 +6,4 @@ release/Makefile
 release/main
 release/libCircLib.a
 release/.output
+release/callgrind.*

@@ -81,4 +81,5 @@ void SaveDotGraph(Circuit* circ, string folder, int id) {
   mkdir(folder.c_str(), ACCESSPERMS);
   string filename = folder + s;
   WriteFile(filename, circ->DotGraph());
+  // system(("dot " + filename).c_str());
 }

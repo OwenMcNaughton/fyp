@@ -6,6 +6,7 @@ using namespace std;
 void CircuitMiscTest();
 void CircuitTest();
 void CircuitMutateTest();
+void UnpinnedCircuitTest();
 void GateTest();
 
 void SerializeTest(Circuit& circ, const string& expected, const string& msg) {
@@ -44,10 +45,11 @@ void TruthTest(
 
 
 void Test() {
-  GateTest();
-  CircuitMiscTest();
-  CircuitTest();
-  CircuitMutateTest();
+  // GateTest();
+  // CircuitMiscTest();
+  // CircuitTest();
+  // CircuitMutateTest();
+  UnpinnedCircuitTest();
 }
 
 void GateTest() {
@@ -115,26 +117,6 @@ void CircuitMiscTest() {
   if (circ.PrintTruth() != expected_truth) {
     cout << "\t !!: Wrong truth: " << circ.PrintTruth() << "\n" <<
       expected_truth << endl;
-  }
-
-  string superfluous = ""
-    "in1,in2,in3\n"
-    "out1,out2,out3\n"
-    "l1a 1,l1o 2,l1x 3\n"
-    "l2x 3,l2n 0,l2a 1\n"
-    "l3x 1,l3a 1,l3n 0\n"
-    "~\n"
-    "in1 -> l1a\n"
-    "in2 -> l1o\n"
-    "l1a -> l2x\n"
-    "l1a -> l2n\n"
-    "l2n -> out2\n"
-    "l2x -> out3\n";
-
-  Circuit circ2(superfluous);
-
-  if (circ2.SuperfluousScore() != 6) {
-    cout << "\t !!: Wrong superfluous score" << endl;
   }
 }
 
@@ -310,4 +292,42 @@ void CircuitMutateTest() {
       circ.TestAll();
     }
   }
+}
+
+void UnpinnedCircuitTest() {
+  string full_adder = ""
+    "a,b,cin\n"
+    "s,cout\n"
+    "xor1 3,and1 1\n"
+    "and2 1,xor2 3\n"
+    "orr 2,\n"
+    "~\n"
+    "a -> xor1\n"
+    "b -> xor1\n"
+    "a -> and1\n"
+    "b -> and1\n"
+    "cin -> and2\n"
+    "cin -> xor2\n"
+    "xor1 -> xor2\n"
+    "xor1 -> and2\n"
+    "and1 -> orr\n"
+    "and2 -> orr\n"
+    "orr -> cout\n"
+    "xor2 -> s\n";
+
+  Circuit c(full_adder);
+
+  vector<vector<string>> truth_table3 = {
+    {"a","b","cin","s","cout"},
+    {"0","0","0","0","0"},
+    {"0","0","1","1","0"},
+    {"0","1","0","1","0"},
+    {"0","1","1","0","1"},
+    {"1","0","0","1","0"},
+    {"1","0","1","0","1"},
+    {"1","1","0","0","1"},
+    {"1","1","1","1","1"},
+  };
+  TruthTest(truth_table3, c, "Fourth", 3);
+  cout << c.correct_count_ << endl;
 }

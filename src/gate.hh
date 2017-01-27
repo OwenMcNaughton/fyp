@@ -24,7 +24,9 @@ class Gate {
 
   void PrintLayout(int i);
 
-  static int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf;
+  bool CanTakeInput();
+
+  static const int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf;
   static int kLineOn, kLineOff, kLineUnknown;
   static vector<int> kGates;
   static map<int, string> kDotGraphNodes;

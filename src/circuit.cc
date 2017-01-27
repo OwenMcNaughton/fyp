@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <set>
 #include "util.hh"
@@ -26,14 +27,15 @@ Circuit* Circuit::Copy() {
 }
 
 void Circuit::Mutate() {
-  int mutation_type = rand() % 2 + 3;
-  switch (mutation_type) {
-    // case 0: MutateNewGate(); break;
-    // case 1: MutateExistingGate(); break;
-    // case 2: MutateRemoveGate(); break;
-    case 3: MutateNewEdge(); break;
-    case 4: MutateRemoveEdge(); break;
+  vector<function<void()>> legal_mutation_types;
+
+  if (edges_.size() > 1) {
+    legal_mutation_types.push_back(bind(&Circuit::MutateRemoveEdge, this));
   }
+  legal_mutation_types.push_back(bind(&Circuit::MutateNewEdge, this));
+  legal_mutation_types.push_back(bind(&Circuit::MutateExistingGate, this));
+
+  legal_mutation_types[rand() % legal_mutation_types.size()]();
 }
 
 void Circuit::MutationSeries() {
@@ -150,16 +152,6 @@ void Circuit::RemoveEdge(Gate* node) {
   }
 }
 
-bool Circuit::FindLoops() {
-  for (Gate* in : outputs_) {
-    set<Gate*> seen;
-    if (in->FindLoops(seen)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 int Circuit::GetDanglingCount(Circuit* circ) {
   int dangling_count = 0;
   for (auto v : circ->gates_) {
@@ -170,36 +162,6 @@ int Circuit::GetDanglingCount(Circuit* circ) {
     }
   }
   return dangling_count;
-}
-
-int Circuit::SuperfluousScore() {
-  int score = 0;
-  set<Gate*> connected_gates;
-  for (Gate* out : outputs_) {
-    out->FindLoops(connected_gates);
-  }
-  for (auto layer : gates_) {
-    for (Gate* g : layer) {
-      if (connected_gates.count(g) == 0) {
-        score++;
-      }
-    }
-  }
-  return score;
-}
-
-void Circuit::Sanitize() {
-  set<Gate*> connected_gates;
-  for (Gate* out : outputs_) {
-    out->FindLoops(connected_gates);
-  }
-  for (auto layer : gates_) {
-    for (Gate* g : layer) {
-      if (connected_gates.count(g) == 0 || g->inputs_.empty()) {
-        RemoveGate(g->name_);
-      }
-    }
-  }
 }
 
 long Circuit::Hash() {
@@ -243,11 +205,14 @@ void Circuit::Evolve() {
     MakeChildren(circ, children, i);
 
     Circuit* best = GetBestChild(children);
-    // best->Sanitize();
 
     circ = best->Copy();
     circ->TestAll();
     SaveDotGraph(circ, "../graphs/", i + 1);
+
+    if (circ->correct_count_ == 8) {
+      exit(0);
+    }
 
     for (int j = 0; j < children.size(); j++) {
       delete children[j];
@@ -271,19 +236,15 @@ void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen)
     } else {
       dupes++;
       if (dupes > 100000) {
-        exit(0);
+        // exit(0);
+        break;
       }
       delete child;
       j--;
     }
   }
+  cout << dupes << endl;
 }
-
-struct CircuitSuperfluousSort {
-  inline bool operator() (Circuit* circ1, Circuit* circ2) {
-    return circ1->SuperfluousScore() < circ2->SuperfluousScore();
-  }
-};
 
 struct CircuitTruthSort {
   inline bool operator() (Circuit* circ1, Circuit* circ2) {
@@ -298,8 +259,6 @@ Circuit* Circuit::GetBestChild(vector<Circuit*>& children) {
   }
 
   sort(children.begin(), children.end(), CircuitTruthSort());
-  sort(children.begin(), children.begin() + children.size() / 10,
-    CircuitSuperfluousSort());
 
   return children[0];
 }
@@ -351,7 +310,7 @@ void Circuit::AddLayer() {
   gates_.push_back(layer);
 }
 
-void Circuit::TestOne() {
+vector<int> Circuit::VectorizeInputs() {
   vector<int> key;
   string kk = "";
   for (Gate* g : inputs_) {
@@ -359,15 +318,20 @@ void Circuit::TestOne() {
     kk += to_string(res) + " ";
     key.push_back(res);
   }
+  return key;
+}
+
+void Circuit::TestOne() {
+  vector<int> key = VectorizeInputs();
 
   ephemeral_truth_[key] = map<string, int>();
-
   map<string, int> val = kTruthTable[key];
+
   int count = 0;
   for (auto expected : val) {
-    for (Gate* g : outputs_) {
-      if (g->name_ == expected.first) {
-        int res = g->Compute();
+    for (pair<string, Gate*> pair : best_pinnings_) {
+      if (pair.first == expected.first) {
+        int res = pair.second->Compute();
         if (res == -1) {
           res = 0;
         } else if (res == 0) {
@@ -376,7 +340,7 @@ void Circuit::TestOne() {
         if (res == expected.second) {
           count++;
         }
-        ephemeral_truth_[key][g->name_] = res;
+        ephemeral_truth_[key][pair.first] = res;
       }
     }
   }
@@ -386,9 +350,91 @@ void Circuit::TestOne() {
   }
 }
 
+void Circuit::FindBestPinningsIter(int idx) {
+  if (idx == inputs_.size() - 1) {
+    inputs_[idx]->type_ = Gate::kOff;
+    FindBestPinningsOne();
+    inputs_[idx]->type_ = Gate::kOnn;
+    FindBestPinningsOne();
+  } else {
+    inputs_[idx]->type_ = Gate::kOff;
+    FindBestPinningsIter(idx + 1);
+    inputs_[idx]->type_ = Gate::kOnn;
+    FindBestPinningsIter(idx + 1);
+  }
+}
+
+void Circuit::FindBestPinningsOne() {
+  vector<int> key = VectorizeInputs();
+
+  map<string, int> val = kTruthTable[key];
+  vector<pair<Gate*, int>> outputs;
+
+  for (auto layer : gates_) {
+    for (Gate* g : layer) {
+      int res = g->Compute();
+      if (res == -1) {
+        res = 0;
+      } else if (res == 0) {
+        bad_ = true;
+      }
+      outputs.push_back(make_pair(g, res));
+    }
+  }
+  shuffle(outputs.begin(), outputs.end(), default_random_engine{});
+
+  ephemeral_outputs_[key].clear();
+
+  for (auto expected : val) {
+    ephemeral_outputs_[key][expected.first] = {};
+    for (auto output : outputs) {
+      if (expected.second == output.second) {
+        ephemeral_outputs_[key][expected.first].insert(output.first);
+      }
+    }
+  }
+}
+
+void Circuit::AssignBestPinnings() {
+  map<string, map<Gate*, int>> best_pinnings;
+  for (auto eo : ephemeral_outputs_) {
+    for (pair<string, set<Gate*>> outputs : eo.second) {
+      for (auto correct_gate : outputs.second) {
+        if (best_pinnings[outputs.first].count(correct_gate)) {
+          best_pinnings[outputs.first][correct_gate]++;
+        } else {
+          best_pinnings[outputs.first][correct_gate] = 1;
+        }
+      }
+    }
+  }
+  for (auto bp : best_pinnings) {
+    Gate* best = nullptr;
+    int most_right = 0;
+    for (auto pair : bp.second) {
+      if (pair.second >= most_right) {
+        most_right = pair.second;
+        best = pair.first;
+      }
+    }
+    if (best) {
+      best_pinnings_[bp.first] = best;
+      for (Gate* g : outputs_) {
+        if (g->name_ == bp.first) {
+          // g->inputs_.clear();
+          RemoveEdge(g->name_);
+          AddEdge(best, g);
+        }
+      }
+    }
+  }
+}
+
 void Circuit::TestAll() {
   correct_count_ = 0;
-  superfluous_score_ = SuperfluousScore();
+  FindBestPinningsIter(0);
+  AssignBestPinnings();
+
   TestAllIter(0);
 }
 
@@ -620,7 +666,7 @@ Gate* Circuit::PickRandomFromLayersStartingFrom(int layer) {
 }
 
 Gate* Circuit::PickRandomFromLayersEndingBefore(int layer) {
-  auto picked_layer = gates_[rand() % gates_.size()];
+  auto picked_layer = gates_[rand() % (gates_.size() - 1)];
   if (picked_layer.empty()) {
     return nullptr;
   }
@@ -636,11 +682,7 @@ Gate* Circuit::PickRandomEdgeSrc(int end_before) {
 }
 
 Gate* Circuit::PickRandomEdgeDst(int start_at) {
-  if (rand() % gates_.size() == 0 || start_at == gates_.size()) {
-    return PickRandomFromOutputs();
-  } else {
-    return PickRandomFromLayersStartingFrom(start_at == -1 ? 0 : start_at);
-  }
+  return PickRandomFromLayersStartingFrom(start_at == -1 ? 0 : start_at);
 }
 
 pair<Gate*, Gate*> Circuit::MakeRandomEdge() {
@@ -650,6 +692,9 @@ pair<Gate*, Gate*> Circuit::MakeRandomEdge() {
   }
   Gate* dst = PickRandomEdgeDst(src->layer_ + 1);
   if (dst && dst->type_ == Gate::kBuf && !dst->inputs_.empty()) {
+    dst = nullptr;
+  }
+  if (!dst->CanTakeInput()) {
     dst = nullptr;
   }
   return make_pair(src, dst);

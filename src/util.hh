@@ -12,8 +12,8 @@ using namespace std;
 class Circuit;
 
 const int kGens = 100;
-const int kChildren = 1000;
-const int kMutations = 100;
+const int kChildren = 10000;
+const int kMutations = 10;
 const int kPrintRate = 10;
 
 vector<string> Split(const string& s, string delimiter);

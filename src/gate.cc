@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-int Gate::kNot = 0, Gate::kAnd = 1,
+const int Gate::kNot = 0, Gate::kAnd = 1,
   Gate::kOrr = 2, Gate::kXor = 3, Gate::kNnd = 4,
   Gate::kOnn = 5, Gate::kOff = 6, Gate::kBuf = 7;
 
@@ -15,6 +15,7 @@ map<int, string> Gate::kDotGraphNodes = {
   {kAnd, "[shape=invhouse,color=forestgreen,penwidth=2]"},
   {kOrr, "[shape=invtriangle,color=darkorchid,penwidth=2]"},
   {kXor, "[shape=invtriangle,peripheries=2,color=red,penwidth=1]"},
+  {kNnd, "[shape=invhouse,peripheries=2,color=lawngreen,penwidth=1]"},
   {kNot, "[shape=invtriangle,color=gold,penwidth=2]"},
   {kOnn, "[shape=circle,color=black,penwidth=2]"},
   {kOff, "[shape=circle,color=black,penwidth=2]"},
@@ -97,6 +98,20 @@ int Gate::Compute() {
       return kLineOn;
     }
   }
+  if (type_ == kNnd) {
+    if (inputs_.empty()) {
+      return kLineUnknown;
+    } else {
+      for (Gate* in : inputs_) {
+        if (in->Compute() == kLineOff) {
+          return kLineOn;
+        } else if (in->Compute() == kLineUnknown) {
+          return kLineUnknown;
+        }
+      }
+      return kLineOff;
+    }
+  }
   if (type_ == kOrr) {
     if (inputs_.empty()) {
       return kLineUnknown;
@@ -147,6 +162,21 @@ void Gate::PrintLayout(int depth) {
   cout << tab << name_ << " " << type_ << " " << inputs_.size() << endl;
   for (Gate* in : inputs_) {
     in->PrintLayout(depth + 1);
+  }
+}
+
+bool Gate::CanTakeInput() {
+  switch (type_) {
+    case kNot:
+      return inputs_.empty();
+    case kAnd:
+      return inputs_.size() < 2;
+    case kXor:
+      return inputs_.size() < 2;
+    case kOrr:
+      return inputs_.size() < 2;
+    case kNnd:
+      return inputs_.size() < 2;
   }
 }
 
