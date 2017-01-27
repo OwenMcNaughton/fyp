@@ -26,7 +26,7 @@ Circuit* Circuit::Copy() {
   for (Gate* g : inputs_) {
     c->AddInput(new Gate(g->type_, g->name_, -1));
   }
-  for (auto layer : gates_) {
+  for (auto& layer : gates_) {
     c->AddLayer();
     for (Gate* g : layer) {
       c->AddGate(new Gate(g->type_, g->name_, g->layer_));
@@ -36,7 +36,7 @@ Circuit* Circuit::Copy() {
     c->AddOutput(new Gate(g->type_, g->name_, gates_.size()));
   }
 
-  for (auto edge : edges_) {
+  for (auto& edge : edges_) {
     c->AddEdge(edge->src_->name_, edge->dst_->name_);
   }
 
@@ -171,7 +171,7 @@ void Circuit::RemoveEdge(Gate* node) {
 
 int Circuit::GetDanglingCount(Circuit* circ) {
   int dangling_count = 0;
-  for (auto v : circ->gates_) {
+  for (auto& v : circ->gates_) {
     for (Gate* g : v) {
       if (g->inputs_.empty()) {
         dangling_count++;
@@ -183,12 +183,12 @@ int Circuit::GetDanglingCount(Circuit* circ) {
 
 long Circuit::Hash() {
   long hash = 37;
-  for (auto layer : gates_) {
+  for (auto& layer : gates_) {
     for (Gate* g : layer) {
       hash = hash * 37 + g->type_;
     }
   }
-  for (auto edge : edges_) {
+  for (auto& edge : edges_) {
     hash = hash * 37 + edge->src_->type_;
     hash = hash * 37 + edge->dst_->type_;
   }
@@ -234,7 +234,7 @@ void Circuit::Evolve() {
     for (int j = 0; j < children.size(); j++) {
       delete children[j];
     }
-    if (i==10) break;
+    if (i == 2) break;
   }
 }
 
@@ -298,7 +298,7 @@ void Circuit::RemoveGate(const string& name) {
   int layer = 0;
   int idx = 0;
   bool breaker = false;
-  for (auto v : gates_) {
+  for (auto& v : gates_) {
     idx = 0;
     for (Gate* g : v) {
       if (g->name_ == name) {
@@ -346,7 +346,7 @@ void Circuit::TestOne() {
   map<string, int> val = kTruthTable[key];
 
   int count = 0;
-  for (auto expected : val) {
+  for (auto& expected : val) {
     for (pair<string, Gate*> pair : best_pinnings_) {
       if (pair.first == expected.first) {
         int res = pair.second->Compute();
@@ -388,7 +388,7 @@ void Circuit::FindBestPinningsOne() {
   map<string, int> val = kTruthTable[key];
   vector<pair<Gate*, int>> outputs;
 
-  for (auto layer : gates_) {
+  for (auto& layer : gates_) {
     for (Gate* g : layer) {
       int res = g->Compute();
       if (res == -1) {
@@ -403,9 +403,9 @@ void Circuit::FindBestPinningsOne() {
 
   ephemeral_outputs_[key].clear();
 
-  for (auto expected : val) {
+  for (auto& expected : val) {
     ephemeral_outputs_[key][expected.first] = {};
-    for (auto output : outputs) {
+    for (auto& output : outputs) {
       if (expected.second == output.second) {
         ephemeral_outputs_[key][expected.first].insert(output.first);
       }
@@ -415,9 +415,9 @@ void Circuit::FindBestPinningsOne() {
 
 void Circuit::AssignBestPinnings() {
   map<string, map<Gate*, int>> best_pinnings;
-  for (auto eo : ephemeral_outputs_) {
+  for (auto& eo : ephemeral_outputs_) {
     for (pair<string, set<Gate*>> outputs : eo.second) {
-      for (auto correct_gate : outputs.second) {
+      for (auto& correct_gate : outputs.second) {
         if (best_pinnings[outputs.first].count(correct_gate)) {
           best_pinnings[outputs.first][correct_gate]++;
         } else {
@@ -426,10 +426,10 @@ void Circuit::AssignBestPinnings() {
       }
     }
   }
-  for (auto bp : best_pinnings) {
+  for (auto& bp : best_pinnings) {
     Gate* best = nullptr;
     int most_right = 0;
-    for (auto pair : bp.second) {
+    for (auto& pair : bp.second) {
       if (pair.second >= most_right) {
         most_right = pair.second;
         best = pair.first;
@@ -476,7 +476,7 @@ void Circuit::AddEdge(const string& src, const string& dst) {
   int layer = 0;
   int src_layer = -1;
   int dst_layer = gates_.size();
-  for (auto v : gates_) {
+  for (auto& v : gates_) {
     for (Gate* g : v) {
       if (g->name_ == src) {
         src_gate = g;
@@ -522,7 +522,7 @@ void Circuit::Load(const string& contents) {
   vector<string> outputs = Split(nodes[1], ",");
   vector<string> edges = Split(split[1], "\n");
 
-  for (auto s : inputs) {
+  for (auto& s : inputs) {
     Gate* g = new Gate(Gate::kOnn, s, -1);
     AddInput(g);
   }
@@ -533,7 +533,7 @@ void Circuit::Load(const string& contents) {
     }
     vector<Gate*> layer;
     gates_.push_back(layer);
-    for (auto s : gates) {
+    for (auto& s : gates) {
       vector<string> node = Split(s, " ");
       if (node.size() < 2) {
         continue;
@@ -542,12 +542,12 @@ void Circuit::Load(const string& contents) {
       AddGate(g);
     }
   }
-  for (auto s : outputs) {
+  for (auto& s : outputs) {
     Gate* g = new Gate(Gate::kBuf, Strip(s, '\n'), nodes.size() - 2);
     AddOutput(g);
   }
 
-  for (auto s : edges) {
+  for (auto& s : edges) {
         vector<string> edge = Split(s, "->");
     if (edge.size() < 2) {
       continue;
@@ -565,7 +565,7 @@ string Circuit::DotGraph() {
   int out_of = pow(2, inputs_.size());
   dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
     to_string(correct_count_) + " / " + to_string(out_of) + "\"\n";
-  for (auto v : gates_) {
+  for (auto& v : gates_) {
     for (Gate* g : v) {
       dotgraph += "\t" + g->name_ + " " + Gate::kDotGraphNodes[g->type_] + "\n";
     }
@@ -579,7 +579,7 @@ string Circuit::DotGraph() {
 
   dotgraph += "\n";
 
-  for (auto edge : edges_) {
+  for (auto& edge : edges_) {
     dotgraph += "\t" + edge->src_->name_ + " -> " + edge->dst_->name_ + "\n";
   }
 
@@ -603,7 +603,7 @@ string Circuit::PrintTruth() {
     truth += g->name_ + ",";
   }
   truth += "\n";
-  for (auto p : ephemeral_truth_) {
+  for (auto& p : ephemeral_truth_) {
     for (int i : p.first) {
       truth += to_string(i) + " ";
     }
@@ -611,7 +611,7 @@ string Circuit::PrintTruth() {
       truth += to_string(p.second[g->name_]) + " ";
     }
     bool all_correct = true;
-    for (auto result : kTruthTable[p.first]) {
+    for (auto& result : kTruthTable[p.first]) {
       if (ephemeral_truth_[p.first][result.first] != result.second) {
         all_correct = false;
       }
@@ -674,7 +674,7 @@ pair<Gate*, Gate*> Circuit::MakeRandomEdge() {
 }
 
 Circuit::~Circuit() {
-  for (auto v : gates_) {
+  for (auto& v : gates_) {
     for (Gate* g : v) {
       delete g;
     }
