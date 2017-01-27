@@ -22,7 +22,24 @@ Circuit::Circuit(const string& contents) {
 
 Circuit* Circuit::Copy() {
   Circuit* c = new Circuit();
-  c->Load(Serialize());
+
+  for (Gate* g : inputs_) {
+    c->AddInput(new Gate(g->type_, g->name_, -1));
+  }
+  for (auto layer : gates_) {
+    c->AddLayer();
+    for (Gate* g : layer) {
+      c->AddGate(new Gate(g->type_, g->name_, g->layer_));
+    }
+  }
+  for (Gate* g : outputs_) {
+    c->AddOutput(new Gate(g->type_, g->name_, gates_.size()));
+  }
+
+  for (auto edge : edges_) {
+    c->AddEdge(edge->src_->name_, edge->dst_->name_);
+  }
+
   return c;
 }
 
@@ -217,6 +234,7 @@ void Circuit::Evolve() {
     for (int j = 0; j < children.size(); j++) {
       delete children[j];
     }
+    if (i==10) break;
   }
 }
 
@@ -421,7 +439,6 @@ void Circuit::AssignBestPinnings() {
       best_pinnings_[bp.first] = best;
       for (Gate* g : outputs_) {
         if (g->name_ == bp.first) {
-          // g->inputs_.clear();
           RemoveEdge(g->name_);
           AddEdge(best, g);
         }
@@ -541,50 +558,6 @@ void Circuit::Load(const string& contents) {
       AddEdge(src, Strip(dst, ' '));
     }
   }
-}
-
-string Circuit::Serialize() {
-  string s = "";
-  for (Gate* g : inputs_) {
-    s += g->name_ ;
-    s += g == inputs_.back() ? "\n" : ",";
-  }
-
-  for (Gate* g : outputs_) {
-    s += g->name_;
-    s += g == outputs_.back() ? "\n" : ",";
-  }
-
-  for (int layer = 0; layer < gates_.size(); layer++) {
-    for (int gate = 0; gate < gates_[layer].size(); gate++) {
-      s += gates_[layer][gate]->name_ + " " + to_string(gates_[layer][gate]->type_);
-      if (gate == gates_[layer].size() - 1 && layer != gates_.size() - 1) {
-        s += "\n";
-      } else {
-        s += ",";
-      }
-    }
-    if (layer == gates_.size() - 1) {
-      s += "\n";
-    }
-  }
-
-  s += "~\n";
-
-  for (auto v : gates_) {
-    for (Gate* g : v) {
-      for (Gate* in : g->inputs_) {
-        s += in->name_ + " -> " + g->name_ + "\n";
-      }
-    }
-  }
-  for (Gate* g : outputs_) {
-    for (Gate* in : g->inputs_) {
-      s += in->name_ + " -> " + g->name_ + "\n";
-    }
-  }
-
-  return s;
 }
 
 string Circuit::DotGraph() {

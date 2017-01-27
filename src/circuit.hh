@@ -57,7 +57,6 @@ class Circuit {
   void AssignBestPinnings();
 
   void Load(const string& filename);
-  string Serialize();
   string DotGraph();
   string PrintTruth();
   void PrintLayout();

@@ -9,13 +9,6 @@ void CircuitMutateTest();
 void UnpinnedCircuitTest();
 void GateTest();
 
-void SerializeTest(Circuit& circ, const string& expected, const string& msg) {
-  if (circ.Serialize() != expected) {
-    cout << "\t FF: " << msg << " circ.Serialize() fails\n" <<
-      expected << "\n\n" << circ.Serialize() << endl;
-  }
-}
-
 void TruthTest(
     vector<vector<string>>& expected, Circuit& circ, const string& msg, int inputs) {
   map<vector<int>, map<string, int>> format = FormatTruthTable(expected, inputs);
@@ -143,8 +136,6 @@ void CircuitTest() {
     "l3x -> out\n";
 
   Circuit circ(basic);
-
-  SerializeTest(circ, basic, "First");
 
   vector<vector<string>> truth_table = {
     {"in1", "in2", "out"},
