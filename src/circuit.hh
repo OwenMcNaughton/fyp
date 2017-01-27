@@ -60,6 +60,7 @@ class Circuit {
   string DotGraph();
   string PrintTruth();
   void PrintLayout();
+  string Serialize();
 
   void Mutate();
   void MutationSeries();
@@ -93,8 +94,6 @@ class Circuit {
   map<vector<int>, map<string, int>> ephemeral_truth_;
   map<vector<int>, map<string, set<Gate*>>> ephemeral_outputs_;
   map<string, Gate*> best_pinnings_;
-
-  static set<long> hashes;
 
   int correct_count_;
   int total_count_;

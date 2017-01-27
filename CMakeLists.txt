@@ -12,4 +12,4 @@ file(GLOB Lib_HEADERS "./src/*.hh")
 
 add_library(CircLib ${Lib_SOURCES} ${Lib_HEADERS})
 add_executable(main "./src/main.cc")
-TARGET_LINK_LIBRARIES(main pthread CircLib)
+TARGET_LINK_LIBRARIES(main CircLib pthread)

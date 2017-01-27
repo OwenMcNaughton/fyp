@@ -12,7 +12,7 @@ using namespace std;
 class Circuit;
 
 const int kGens = 1000;
-const int kChildren = 10000;
+const int kChildren = 2000;
 const int kMutations = 6;
 
 vector<string> Split(const string& s, string delimiter);

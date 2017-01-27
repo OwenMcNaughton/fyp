@@ -5,12 +5,14 @@
 #include <functional>
 #include <iostream>
 #include <set>
+#include <thread>
 #include "util.hh"
 
 using namespace std;
 
 map<vector<int>, map<string, int>> Circuit::kTruthTable = {};
-set<long> Circuit::hashes = {};
+
+vector<Circuit*> bests = {NULL, NULL, NULL, NULL};
 
 Circuit::Circuit() {
 
@@ -221,25 +223,42 @@ void Circuit::Evolve() {
   Circuit::kTruthTable = FormatTruthTable(truth_table, 4);
   SaveDotGraph(circ, "../graphs/", 0);
 
-  hashes = {};
-
   for (int i = 0; i != kGens; i++) {
     cout << "GEN: " << i << endl;
-    vector<Circuit*> children;
-    MakeChildren(circ, children, i);
 
-    Circuit* best = GetBestChild(children);
+    vector<thread> workers;
+    for (int j = 0; j < 4; j++) {
+      Circuit* c = bests[j];
+      workers.push_back(thread([circ, &c, i, j]() {
+        vector<Circuit*> children;
+        Circuit* circ2 = circ->Copy();
+        Circuit::MakeChildren(circ2, children, i);
+        bests[j] = Circuit::GetBestChild(children);
+        bests[j]->TestAll();
+        for (int k = 1; k < children.size(); k++) {
+          delete children[k];
+        }
+      }));
+    }
+    for (int j = 0; j < 4; j++) {
+      workers[j].join();
+    }
 
-    circ = best->Copy();
-    circ->TestAll();
+    int best_count = 0;
+    int f = 0;
+    for (Circuit* c : bests) {
+      if (c) {
+        if (c->total_count_ >= best_count) {
+          circ = c;
+          best_count = c->total_count_;
+        }
+      }
+    }
+
     SaveDotGraph(circ, "../graphs/", i + 1);
 
     if (circ->correct_count_ == pow(2, circ->inputs_.size())) {
       exit(0);
-    }
-
-    for (int j = 0; j < children.size(); j++) {
-      delete children[j];
     }
   }
 }
@@ -247,6 +266,7 @@ void Circuit::Evolve() {
 void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen) {
   int dupes = 0;
   children.push_back(parent->Copy());
+  set<long> hashes = {};
   for (int j = 0; j != kChildren; j++) {
     Circuit* child = parent->Copy();
     int m = (rand() % kMutations) + 1;
