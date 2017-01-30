@@ -201,26 +201,6 @@ void Circuit::Evolve() {
   Circuit* circ = new Circuit();
   circ->Load(ReadFile("../circs/2bitmulstarter.circ"));
 
-  vector<vector<string>> truth_table = {
-    {"a1","a0","b1","b0","y3","y2","y1","y0"},
-    {"0","0","0","0","0","0","0","0"},
-    {"0","0","0","1","0","0","0","0"},
-    {"0","0","1","0","0","0","0","0"},
-    {"0","0","1","1","0","0","0","0"},
-    {"0","1","0","0","0","0","0","0"},
-    {"0","1","0","1","0","0","0","1"},
-    {"0","1","1","0","0","0","1","0"},
-    {"0","1","1","1","0","0","1","1"},
-    {"1","0","0","0","0","0","0","0"},
-    {"1","0","0","1","0","0","1","0"},
-    {"1","0","1","0","0","1","0","0"},
-    {"1","0","1","1","0","1","1","0"},
-    {"1","1","0","0","0","0","0","0"},
-    {"1","1","0","1","0","0","1","1"},
-    {"1","1","1","0","0","1","1","0"},
-    {"1","1","1","1","1","0","0","1"}};
-
-  Circuit::kTruthTable = FormatTruthTable(truth_table, 4);
   SaveDotGraph(circ, "../graphs/", 0);
 
   for (int i = 0; i != kGens; i++) {
@@ -240,18 +220,13 @@ void Circuit::Evolve() {
         }
       }));
     }
-    for (int j = 0; j < 4; j++) {
-      workers[j].join();
-    }
-
     int best_count = 0;
     int f = 0;
-    for (Circuit* c : bests) {
-      if (c) {
-        if (c->total_count_ >= best_count) {
-          circ = c;
-          best_count = c->total_count_;
-        }
+    for (int j = 0; j < 4; j++) {
+      workers[j].join();
+      if (bests[j]->total_count_ >= best_count) {
+        circ = bests[j];
+        best_count = bests[j]->total_count_;
       }
     }
 
@@ -597,6 +572,15 @@ void Circuit::Load(const string& contents) {
       AddEdge(src, Strip(dst, ' '));
     }
   }
+
+  vector<string> truth_split = Split(split[2], "\n");
+  int input_size = atoi(truth_split[1].c_str());
+  vector<vector<string>> truth_table;
+  for (int i = 2; i < truth_split.size() - 1; i++) {
+    vector<string> row = Split(truth_split[i], ",");
+    truth_table.push_back(row);
+  }
+  Circuit::kTruthTable = FormatTruthTable(truth_table, input_size);
 }
 
 string Circuit::DotGraph() {
