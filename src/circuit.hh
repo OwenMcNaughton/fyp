@@ -73,7 +73,9 @@ class Circuit {
   void MutateRemoveEdge();
 
   static void Evolve();
-  static void MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen);
+  static set<long> MakeChildren(
+    Circuit* parent, vector<Circuit*>& children,
+    int gen, const set<long>& hashes);
   static Circuit* GetBestChild(vector<Circuit*>& children);
 
   static int GetDanglingCount(Circuit* circ);

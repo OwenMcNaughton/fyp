@@ -203,16 +203,22 @@ void Circuit::Evolve() {
 
   SaveDotGraph(circ, "../graphs/", 0);
 
-  for (int i = 0; i != kGens; i++) {
-    cout << "GEN: " << i << endl;
+  vector<Circuit*> historical;
+  historical.reserve(kGens);
+  historical[0] = circ;
+  set<long> hashes = {};
+  int stag_count = 0;
 
+  for (int i = 1; i != kGens; i++) {
+    cout << "GEN: " << i << ", Dupes: ";
     vector<thread> workers;
+    vector<set<long>> new_hashes = {{}, {}, {}, {}};
     for (int j = 0; j < 4; j++) {
       Circuit* c = bests[j];
-      workers.push_back(thread([circ, &c, i, j]() {
+      workers.push_back(thread([circ, &c, i, j, hashes, &new_hashes]() {
         vector<Circuit*> children;
         Circuit* circ2 = circ->Copy();
-        Circuit::MakeChildren(circ2, children, i);
+        new_hashes[j] = Circuit::MakeChildren(circ2, children, i, hashes);
         bests[j] = Circuit::GetBestChild(children);
         bests[j]->TestAll();
         for (int k = 1; k < children.size(); k++) {
@@ -224,9 +230,28 @@ void Circuit::Evolve() {
     int f = 0;
     for (int j = 0; j < 4; j++) {
       workers[j].join();
-      if (bests[j]->total_count_ >= best_count) {
+      hashes.insert(new_hashes[j].begin(), new_hashes[j].end());
+      if (bests[j] && bests[j]->total_count_ >= best_count) {
         circ = bests[j];
         best_count = bests[j]->total_count_;
+      }
+    }
+    cout << "\n\tBest: " << best_count << endl;
+
+    historical[i] = circ;
+    if (i - kMaxGenStagnation - 1 >= 0) {
+      if (historical[i - kMaxGenStagnation]->total_count_ >= best_count) {
+        if (stag_count > 3) {
+          circ = historical[0];
+          i = 0;
+          stag_count = 0;
+          cout << "STAGNATION, reset to: 0" << endl;
+        } else {
+          circ = historical[i - kMaxGenStagnation -1];
+          i -= kMaxGenStagnation - 1;
+          stag_count++;
+          cout << "STAGNATION, go to: " << (i - kMaxGenStagnation - 1) << endl;
+        }
       }
     }
 
@@ -238,10 +263,12 @@ void Circuit::Evolve() {
   }
 }
 
-void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen) {
+set<long> Circuit::MakeChildren(
+    Circuit* parent, vector<Circuit*>& children,
+    int gen, const set<long>& hashes) {
   int dupes = 0;
   children.push_back(parent->Copy());
-  set<long> hashes = {};
+  set<long> new_hashes = {};
   for (int j = 0; j != kChildren; j++) {
     Circuit* child = parent->Copy();
     int m = (rand() % kMutations) + 1;
@@ -251,7 +278,7 @@ void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen)
     long hash = child->Hash();
     if (hashes.count(hash) == 0) {
       children.push_back(child);
-      hashes.insert(hash);
+      new_hashes.insert(hash);
     } else {
       dupes++;
       if (dupes > 100000) {
@@ -262,7 +289,8 @@ void Circuit::MakeChildren(Circuit* parent, vector<Circuit*>& children, int gen)
       j--;
     }
   }
-  cout << dupes << endl;
+  cout << dupes << " ";
+  return new_hashes;
 }
 
 struct CircuitTruthSort {
