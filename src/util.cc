@@ -69,7 +69,7 @@ map<vector<int>, map<string, int>> FormatTruthTable(
     for (int j = input_count; j != truth_table[0].size(); j++) {
       expecteds[truth_table[0][j]] = atoi(truth_table[i][j].c_str());
     }
-    truth_table_ret.emplace(ins, expecteds);
+    truth_table_ret[ins] = expecteds;
   }
   return truth_table_ret;
 }
