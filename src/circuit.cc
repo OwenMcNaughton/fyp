@@ -3,16 +3,18 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <set>
-#include <thread>
+#include <stdexcept>
+#include "threadpool.hh"
 #include "util.hh"
 
 using namespace std;
 
 map<vector<int>, map<string, int>> Circuit::kTruthTable = {};
 
-vector<Circuit*> bests = {NULL, NULL, NULL, NULL};
+vector<Circuit*> bests;
 
 Circuit::Circuit() {
 
@@ -208,29 +210,32 @@ void Circuit::Evolve() {
   historical[0] = circ;
   set<long> hashes = {};
   int stag_count = 0;
+  ThreadPool pool(kThreads);
+  bests.reserve(kThreads);
 
   for (int i = 1; i != kGens; i++) {
+    vector<future<set<long>>> futures;
     cout << "GEN: " << i << ", Dupes: ";
-    vector<thread> workers;
-    vector<set<long>> new_hashes = {{}, {}, {}, {}};
-    for (int j = 0; j < 4; j++) {
-      Circuit* c = bests[j];
-      workers.push_back(thread([circ, &c, i, j, hashes, &new_hashes]() {
+    vector<set<long>> new_hashes;
+    for (int j = 0; j < kThreads; j++) {
+      auto fut = pool.enqueue([circ, i, j, hashes, &new_hashes]() {
         vector<Circuit*> children;
         Circuit* circ2 = circ->Copy();
-        new_hashes[j] = Circuit::MakeChildren(circ2, children, i, hashes);
+        set<long> new_hash = Circuit::MakeChildren(circ2, children, i, hashes);
         bests[j] = Circuit::GetBestChild(children);
         bests[j]->TestAll();
         for (int k = 1; k < children.size(); k++) {
           delete children[k];
         }
-      }));
+        return new_hash;
+      });
+      futures.push_back(move(fut));
     }
     int best_count = 0;
     int f = 0;
-    for (int j = 0; j < 4; j++) {
-      workers[j].join();
-      hashes.insert(new_hashes[j].begin(), new_hashes[j].end());
+    for (int j = 0; j < kThreads; j++) {
+      auto new_hash = futures[j].get();
+      hashes.insert(new_hash.begin(), new_hash.end());
       if (bests[j] && bests[j]->total_count_ >= best_count) {
         circ = bests[j];
         best_count = bests[j]->total_count_;

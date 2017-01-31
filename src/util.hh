@@ -15,6 +15,7 @@ const int kGens = 1000;
 const int kChildren = 2000;
 const int kMutations = 6;
 const int kMaxGenStagnation = 5;
+const int kThreads = 4;
 
 vector<string> Split(const string& s, string delimiter);
 
