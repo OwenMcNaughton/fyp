@@ -15,6 +15,7 @@ using namespace std;
 map<vector<int>, map<string, int>> Circuit::kTruthTable = {};
 
 vector<Circuit*> bests;
+vector<vector<Circuit*>> tied_bests;
 
 Circuit::Circuit() {
 
@@ -202,63 +203,54 @@ long Circuit::Hash() {
 void Circuit::Evolve() {
   Circuit* circ = new Circuit();
   circ->Load(ReadFile("../circs/2bitmulstarter.circ"));
-
   SaveDotGraph(circ, "../graphs/", 0);
 
   vector<Circuit*> historical;
-  historical.reserve(kGens);
+  historical.reserve(Util::kGens);
   historical[0] = circ;
   set<long> hashes = {};
   int stag_count = 0;
-  ThreadPool pool(kThreads);
-  bests.reserve(kThreads);
+  ThreadPool pool(Util::kThreads);
+  bests.reserve(Util::kThreads);
+  for (int i = 0; i != Util::kThreads; i++) {
+    vector<Circuit*> stream;
+    tied_bests.push_back(stream);
+  }
+  vector<Circuit*> breeds;
 
-  for (int i = 1; i != kGens; i++) {
+  for (int i = 1; i != Util::kGens; i++) {
     vector<future<set<long>>> futures;
     cout << "GEN: " << i << ", Dupes: ";
     vector<set<long>> new_hashes;
-    for (int j = 0; j < kThreads; j++) {
-      auto fut = pool.enqueue([circ, i, j, hashes, &new_hashes]() {
+    for (int j = 0; j < Util::kThreads; j++) {
+      Circuit* circ2 = circ->Copy();
+      auto fut = pool.enqueue([circ2, &breeds, i, j, hashes, &new_hashes]() {
         vector<Circuit*> children;
-        Circuit* circ2 = circ->Copy();
         set<long> new_hash = Circuit::MakeChildren(circ2, children, i, hashes);
+        CircuitSort(children);
         bests[j] = Circuit::GetBestChild(children);
-        bests[j]->TestAll();
-        for (int k = 1; k < children.size(); k++) {
-          delete children[k];
-        }
+        FilterBestChildren(children, j);
         return new_hash;
       });
       futures.push_back(move(fut));
     }
+
     int best_count = 0;
     int f = 0;
-    for (int j = 0; j < kThreads; j++) {
+    for (int j = 0; j < Util::kThreads; j++) {
       auto new_hash = futures[j].get();
       hashes.insert(new_hash.begin(), new_hash.end());
       if (bests[j] && bests[j]->total_count_ >= best_count) {
         circ = bests[j];
         best_count = bests[j]->total_count_;
       }
+      breeds.insert(breeds.end(), tied_bests[j].begin(), tied_bests[j].end());
     }
+    shuffle(breeds.begin(), breeds.end(), default_random_engine{});
+
     cout << "\n\tBest: " << best_count << endl;
 
-    historical[i] = circ;
-    if (i - kMaxGenStagnation - 1 >= 0) {
-      if (historical[i - kMaxGenStagnation]->total_count_ >= best_count) {
-        if (stag_count > 3) {
-          circ = historical[0];
-          i = 0;
-          stag_count = 0;
-          cout << "STAGNATION, reset to: 0" << endl;
-        } else {
-          circ = historical[i - kMaxGenStagnation -1];
-          i -= kMaxGenStagnation - 1;
-          stag_count++;
-          cout << "STAGNATION, go to: " << (i - kMaxGenStagnation - 1) << endl;
-        }
-      }
-    }
+    // DetectStagnation(historical, &i, best_count, &stag_count, circ);
 
     SaveDotGraph(circ, "../graphs/", i + 1);
 
@@ -269,15 +261,14 @@ void Circuit::Evolve() {
 }
 
 set<long> Circuit::MakeChildren(
-    Circuit* parent, vector<Circuit*>& children,
-    int gen, const set<long>& hashes) {
+    Circuit* parent, vector<Circuit*>& children, int gen, const set<long>& hashes) {
   int dupes = 0;
   children.push_back(parent->Copy());
   set<long> new_hashes = {};
-  for (int j = 0; j != kChildren; j++) {
+  for (int j = 0; j != Util::kChildren; j++) {
     Circuit* child = parent->Copy();
-    int m = (rand() % kMutations) + 1;
-    for (int k = 0; k != 10; k++) {
+    int m = (rand() % Util::kMutations) + 1;
+    for (int k = 0; k != m; k++) {
       child->Mutate();
     }
     long hash = child->Hash();
@@ -298,22 +289,92 @@ set<long> Circuit::MakeChildren(
   return new_hashes;
 }
 
+set<long> Circuit::MakeBredChildren(
+    vector<Circuit*>& parents, vector<Circuit*>& children,
+    int gen, const set<long>& hashes) {
+  for (int i = 0; i != parents.size() / 2; i++) {
+    Circuit* bred_child = Breed(parents[i], parents[i + 1]);
+  }
+}
+
+void Circuit::DetectStagnation(
+    vector<Circuit*>& historical, int* gen, int best_count,
+    int* stag_count, Circuit* circ) {
+  historical[*gen] = circ;
+  if (*gen - Util::kMaxGenStagnation - 1 >= 0) {
+    if (historical[*gen - Util::kMaxGenStagnation]->total_count_ >= best_count) {
+      if (*stag_count > 3) {
+        circ = historical[0];
+        *gen = 0;
+        *stag_count = 0;
+        cout << "STAGNATION, reset to: 0" << endl;
+      } else {
+        circ = historical[*gen - Util::kMaxGenStagnation - 1];
+        cout << "STAGNATION, go to: " << (*gen - Util::kMaxGenStagnation - 1) << endl;
+        *gen -= Util::kMaxGenStagnation - 1;
+        *stag_count++;
+      }
+    }
+  }
+}
+
+Circuit* Circuit::Breed(Circuit* a, Circuit* b) {
+  Circuit* c = new Circuit();
+
+  for (Gate* g : a->inputs_) {
+    c->AddInput(new Gate(g->type_, g->name_, -1));
+  }
+  for (auto& layer : a->gates_) {
+    c->AddLayer();
+    for (Gate* g : layer) {
+      c->AddGate(new Gate(g->type_, g->name_, g->layer_));
+    }
+  }
+  for (Gate* g : a->outputs_) {
+    c->AddOutput(new Gate(g->type_, g->name_, a->gates_.size()));
+  }
+
+  for (auto& edge : a->edges_) {
+    c->AddEdge(edge->src_->name_, edge->dst_->name_);
+  }
+}
+
 struct CircuitTruthSort {
   inline bool operator() (Circuit* circ1, Circuit* circ2) {
     return circ1->total_count_ > circ2->total_count_;
   }
 };
 
-Circuit* Circuit::GetBestChild(vector<Circuit*>& children) {
-  int correct_max = -1;
+void Circuit::CircuitSort(vector<Circuit*>& children) {
   for (int j = 0; j != children.size(); j++) {
     children[j]->TestAll();
   }
 
   sort(children.begin(), children.end(), CircuitTruthSort());
+}
 
+Circuit* Circuit::GetBestChild(vector<Circuit*>& children) {
   return children[0];
 }
+
+void Circuit::FilterBestChildren(vector<Circuit*>& children, int thread) {
+  int best = children[0]->total_count_;
+  int range = 1;
+  for (int i = children.size() - 1; i > 0; i--) {
+    if (children[i]->total_count_ < best) {
+      range = i;
+      break;
+    }
+    delete children[i];
+  }
+  children.erase(children.begin() + range, children.end());
+
+  for (Circuit* c : tied_bests[thread]) {
+    delete c;
+  }
+  tied_bests[thread] = children;
+}
+
 
 void Circuit::AddInput(Gate* g) {
   inputs_.push_back(g);

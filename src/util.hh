@@ -11,11 +11,16 @@ using namespace std;
 
 class Circuit;
 
-const int kGens = 1000;
-const int kChildren = 2000;
-const int kMutations = 6;
-const int kMaxGenStagnation = 5;
-const int kThreads = 4;
+class Util {
+ public:
+  static void InitParams(const string& file = "../src/params");
+
+  static int kGens;
+  static int kChildren;
+  static int kMutations;
+  static int kMaxGenStagnation;
+  static int kThreads;
+};
 
 vector<string> Split(const string& s, string delimiter);
 
@@ -28,5 +33,6 @@ map<vector<int>, map<string, int>> FormatTruthTable(
   vector<vector<string>>& truth_table, int input_count);
 
 void SaveDotGraph(Circuit* circ, string folder, int id);
+
 
 #endif

@@ -36,6 +36,7 @@ class Gate {
   int type_;
   string name_;
   int layer_;
+  int idx_;
   bool computed_;
   int stored_answer_;
 };

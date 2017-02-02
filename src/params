@@ -1,0 +1,5 @@
+kGens: 1000
+kChildren: 1000
+kMutations: 20
+kMaxGenStagnation: 10
+kThreads: 4

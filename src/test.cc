@@ -38,10 +38,10 @@ void TruthTest(
 
 
 void Test() {
-  // GateTest();
-  // CircuitMiscTest();
-  // CircuitTest();
-  // CircuitMutateTest();
+  GateTest();
+  CircuitMiscTest();
+  CircuitTest();
+  CircuitMutateTest();
   UnpinnedCircuitTest();
 }
 
@@ -68,6 +68,7 @@ void CircuitMiscTest() {
     "l1a -> out1\n"
     "l1a -> out2\n"
     "in3 -> out3\n";
+    "~\n";
 
   Circuit circ(basic);
 

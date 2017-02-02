@@ -8,6 +8,12 @@
 
 using namespace std;
 
+int Util::kGens = 0;
+int Util::kChildren = 0;
+int Util::kMutations = 0;
+int Util::kMaxGenStagnation = 0;
+int Util::kThreads = 0;
+
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
 
@@ -82,4 +88,22 @@ void SaveDotGraph(Circuit* circ, string folder, int id) {
   string filename = folder + s;
   WriteFile(filename, circ->DotGraph());
   // system(("dot " + filename).c_str());
+}
+
+void Util::InitParams(const string& file) {
+  string p = ReadFile(file);
+  vector<string> split = Split(p, "\n");
+  map<string, int> split_map;
+  for (string& s : split) {
+    if (s == "") {
+      continue;
+    }
+    vector<string> parts = Split(s, ":");
+    split_map[Strip(parts[0], ' ')] = atoi(Strip(parts[1], ' ').c_str());
+  }
+  Util::kGens = split_map["kGens"];
+  Util::kChildren = split_map["kChildren"];
+  Util::kMutations = split_map["kMutations"];
+  Util::kMaxGenStagnation = split_map["kMaxGenStagnation"];
+  Util::kThreads = split_map["kThreads"];
 }
