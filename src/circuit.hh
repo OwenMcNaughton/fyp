@@ -72,21 +72,6 @@ class Circuit {
   void MutateExistingEdge();
   void MutateRemoveEdge();
 
-  static void Evolve();
-  static set<long> MakeChildren(
-    Circuit* parent, vector<Circuit*>& children, int gen, const set<long>& hashes);
-  static set<long> MakeBredChildren(
-    vector<Circuit*>& parents, vector<Circuit*>& children,
-    int gen, const set<long>& hashes);
-  static void CircuitSort(vector<Circuit*>& children);
-  static Circuit* GetBestChild(vector<Circuit*>& children);
-  static void FilterBestChildren(vector<Circuit*>& children, int thread);
-  static void BreedBatch(vector<Circuit*>& children);
-  static Circuit* Breed(Circuit* a, Circuit* b);
-  static void DetectStagnation(
-    vector<Circuit*>& historical, int* gen, int best_count,
-    int* stag_count, Circuit* circ);
-
   static int GetDanglingCount(Circuit* circ);
   long Hash();
 
@@ -95,6 +80,21 @@ class Circuit {
     other.TestAll();
     return other.correct_count_ < correct_count_;
   }
+
+  // { NON UTIL
+  static void Evolve();
+  static set<long> MakeChildren(
+    Circuit* parent, vector<Circuit*>& children,
+    int gen, const set<long>& hashes);
+  static set<long> MakeBredChildren(
+    vector<Circuit*>& parents, vector<Circuit*>& children,
+    int gen, const set<long>& hashes);
+  static void CircuitSort(vector<Circuit*>& children);
+  static Circuit* GetBestChild(vector<Circuit*>& children);
+  static void DetectStagnation(
+    vector<Circuit*>& historical, int* gen, int best_count,
+    int* stag_count, Circuit* circ);
+  // NON UTIL }
 
   vector<Gate*> inputs_;
   vector<Gate*> outputs_;

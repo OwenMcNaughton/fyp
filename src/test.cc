@@ -64,13 +64,25 @@ void CircuitMiscTest() {
     "l6x 1,l6a 2,l6n 3\n"
     "~\n"
     "in1 -> l1a\n"
-    "in2 -> l1a\n"
+    "in3 -> l1a\n"
     "l1a -> out1\n"
     "l1a -> out2\n"
-    "in3 -> out3\n";
-    "~\n";
+    "in2 -> out3\n"
+    "~\n"
+    "3\n"
+    "in1,in2,in3,out1,out2,out3\n"
+    "0,0,0,0,0,0\n"
+    "0,0,1,0,0,1\n"
+    "0,1,0,0,0,0\n"
+    "0,1,1,0,0,1\n"
+    "1,0,0,0,0,0\n"
+    "1,0,1,1,1,1\n"
+    "1,1,0,1,1,0\n"
+    "1,1,1,1,1,1\n";
 
   Circuit circ(basic);
+
+  circ.PrintLayout();
 
   for (int i = 0; i != 1000; i++) {
     auto e = circ.MakeRandomEdge();
@@ -82,19 +94,6 @@ void CircuitMiscTest() {
     }
   }
 
-  vector<vector<string>> truth_table = {
-    {"in1", "in2", "in3", "out1", "out2", "out3"},
-    {"0","0","0","1","1","0"},
-    {"0","0","1","1","1","0"},
-    {"0","1","0","1","1","0"},
-    {"0","1","1","1","1","0"},
-    {"1","0","0","1","1","0"},
-    {"1","0","1","1","1","0"},
-    {"1","1","0","1","1","0"},
-    {"1","1","1","1","1","0"}
-  };
-  Circuit::kTruthTable = FormatTruthTable(truth_table, 3);
-
   circ.TestAll();
 
   string expected_truth = ""
@@ -104,8 +103,8 @@ void CircuitMiscTest() {
     "0 1 0 0 0 0 -\n"
     "0 1 1 0 0 1 -\n"
     "1 0 0 0 0 0 -\n"
-    "1 0 1 0 0 1 -\n"
-    "1 1 0 1 1 0 +\n"
+    "1 0 1 1 1 1 -\n"
+    "1 1 0 0 0 0 +\n"
     "1 1 1 1 1 1 -\n";
 
   if (circ.PrintTruth() != expected_truth) {

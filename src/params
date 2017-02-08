@@ -1,4 +1,4 @@
-kGens: 1000
+kGens: 50
 kChildren: 1000
 kMutations: 20
 kMaxGenStagnation: 10
