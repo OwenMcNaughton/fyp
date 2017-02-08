@@ -13,6 +13,7 @@ int Util::kChildren = 0;
 int Util::kMutations = 0;
 int Util::kMaxGenStagnation = 0;
 int Util::kThreads = 0;
+int Util::kSeed = 0;
 
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
@@ -106,4 +107,5 @@ void Util::InitParams(const string& file) {
   Util::kMutations = split_map["kMutations"];
   Util::kMaxGenStagnation = split_map["kMaxGenStagnation"];
   Util::kThreads = split_map["kThreads"];
+  Util::kSeed = split_map["kSeed"];
 }
