@@ -13,6 +13,7 @@
 using namespace std;
 
 map<vector<int>, map<string, int>> Circuit::kTruthTable = {};
+vector<int> Circuit::kTruthDecimal = {};
 
 vector<Circuit*> bests;
 
@@ -64,7 +65,10 @@ void Circuit::Evolve() {
       }
     }
 
-    cout << "\n\tBest: " << best_count << endl;
+    circ->BinTruthToDec();
+
+    cout << "\n\tBestTotal: " << circ->total_count_ << " BestExact: " <<
+      circ->correct_count_ << " DecimalDiff: " << circ->decimal_diff_ << endl;
 
     // DetectStagnation(historical, &i, best_count, &stag_count, circ);
 
@@ -129,6 +133,12 @@ void Circuit::DetectStagnation(
 struct CircuitTruthSort {
   inline bool operator() (Circuit* circ1, Circuit* circ2) {
     return circ1->total_count_ > circ2->total_count_;
+  }
+};
+
+struct CircuitDecimalDiffSort {
+  inline bool operator() (Circuit* circ1, Circuit* circ2) {
+    return circ1->decimal_diff_ < circ2->decimal_diff_;
   }
 };
 

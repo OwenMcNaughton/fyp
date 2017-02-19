@@ -81,6 +81,21 @@ map<vector<int>, map<string, int>> FormatTruthTable(
   return truth_table_ret;
 }
 
+vector<int> FormatTruthDecimal(
+    map<vector<int>, map<string, int>> truth_table, int input_count,
+    vector<Gate*> outputs) {
+  vector<int> decimal_truth;
+  for (auto& pair : truth_table) {
+    int output_val = 0;
+    for (Gate* g : outputs) {
+      output_val = output_val << 1;
+      output_val += pair.second[g->name_];
+    }
+    decimal_truth.push_back(output_val);
+  }
+  return decimal_truth;
+}
+
 void SaveDotGraph(Circuit* circ, string folder, int id) {
   circ->TestAll();
   char s[50];

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <functional>
 #include <future>
+#include <iomanip>
 #include <iostream>
 #include <set>
 
@@ -302,7 +303,7 @@ void Circuit::FindBestPinningsOne() {
       outputs.push_back(make_pair(g, res));
     }
   }
-  shuffle(outputs.begin(), outputs.end(), default_random_engine{});
+  // shuffle(outputs.begin(), outputs.end(), default_random_engine{});
 
   ephemeral_outputs_[key].clear();
 
@@ -471,6 +472,8 @@ void Circuit::Load(const string& contents) {
     truth_table.push_back(row);
   }
   Circuit::kTruthTable = FormatTruthTable(truth_table, input_size);
+  Circuit::kTruthDecimal = FormatTruthDecimal(
+    Circuit::kTruthTable, input_size, outputs_);
 }
 
 string Circuit::DotGraph() {
@@ -586,4 +589,27 @@ pair<Gate*, Gate*> Circuit::MakeRandomEdge() {
     dst = nullptr;
   }
   return make_pair(src, dst);
+}
+
+void Circuit::MessUp(int factor) {
+  for (int i = 0; i != factor; i++) {
+    Mutate();
+  }
+}
+
+void Circuit::BinTruthToDec() {
+  truth_decimal_.clear();
+  for (auto& pair : ephemeral_truth_) {
+    int output_val = 0;
+    for (Gate* g : outputs_) {
+      output_val = output_val << 1;
+      output_val += pair.second[g->name_];
+    }
+    truth_decimal_.push_back(output_val);
+  }
+
+  decimal_diff_ = 0;
+  for (int i = 0; i != kTruthDecimal.size(); i++) {
+    decimal_diff_ += abs(kTruthDecimal[i] - truth_decimal_[i]);
+  }
 }

@@ -72,6 +72,9 @@ class Circuit {
   void MutateExistingEdge();
   void MutateRemoveEdge();
 
+  void MessUp(int factor);
+  void BinTruthToDec();
+
   static int GetDanglingCount(Circuit* circ);
   long Hash();
 
@@ -102,6 +105,8 @@ class Circuit {
   vector<Edge*> edges_;
 
   static map<vector<int>, map<string, int>> kTruthTable;
+  static vector<int> kTruthDecimal;
+  vector<int> truth_decimal_;
   map<vector<int>, map<string, int>> ephemeral_truth_;
   map<vector<int>, map<string, set<Gate*>>> ephemeral_outputs_;
   map<string, Gate*> best_pinnings_;
@@ -109,6 +114,7 @@ class Circuit {
   int correct_count_;
   int total_count_;
   int superfluous_score_;
+  int decimal_diff_;
   bool bad_ = false;
 };
 

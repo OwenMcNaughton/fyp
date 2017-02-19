@@ -20,6 +20,7 @@ class Util {
   static int kMutations;
   static int kMaxGenStagnation;
   static int kThreads;
+  static int kSeed;
 };
 
 vector<string> Split(const string& s, string delimiter);
@@ -32,7 +33,10 @@ string Strip(const string& src, char strip);
 map<vector<int>, map<string, int>> FormatTruthTable(
   vector<vector<string>>& truth_table, int input_count);
 
-void SaveDotGraph(Circuit* circ, string folder, int id);
+vector<int> FormatTruthDecimal(
+  map<vector<int>, map<string, int>> truth_table, int input_count,
+  vector<Gate*> outputs);
 
+void SaveDotGraph(Circuit* circ, string folder, int id);
 
 #endif
