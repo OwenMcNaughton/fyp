@@ -480,9 +480,9 @@ string Circuit::DotGraph() {
   string dotgraph = "digraph {\n";
   int out_of = pow(2, inputs_.size());
   int total_out_of = out_of * outputs_.size();
-  dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
-    to_string(correct_count_) + " / " + to_string(out_of) + "\n" +
-    to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
+  // dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
+  //   to_string(correct_count_) + " / " + to_string(out_of) + "\n" +
+  //   to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
   for (auto& v : gates_) {
     for (Gate* g : v) {
       dotgraph += "\t" + g->name_ + " " + Gate::kDotGraphNodes[g->type_] + "\n";
