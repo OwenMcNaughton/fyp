@@ -27,10 +27,14 @@ Circuit::Circuit(const string& contents) {
 
 void Circuit::Evolve(const string& target) {
   Circuit* circ = new Circuit();
-  circ->Load(ReadFile("../circs/" + target ".circ"));
-  SaveDotGraph(circ, "../graphs/", "original");
+  circ->Load(ReadFile("../circs/" + target + ".circ"));
+  if (Util::kSaveDotGraphs) {
+    SaveDotGraph(circ, "../graphs/", "original");
+  }
   circ->MessUp(1);
-  SaveDotGraph(circ, "../graphs/", 0);
+  if (Util::kSaveDotGraphs) {
+    SaveDotGraph(circ, "../graphs/", 0);
+  }
 
   vector<Circuit*> historical;
   historical.reserve(Util::kGens);
@@ -74,7 +78,9 @@ void Circuit::Evolve(const string& target) {
 
     // DetectStagnation(historical, &i, best_count, &stag_count, circ);
 
-    SaveDotGraph(circ, "../graphs/", i + 1);
+    if (Util::kSaveDotGraphs) {
+      SaveDotGraph(circ, "../graphs/", i + 1);
+    }
 
     if (circ->correct_count_ == pow(2, circ->inputs_.size())) {
       exit(0);
@@ -91,7 +97,7 @@ set<long> Circuit::MakeChildren(
     Circuit* child = parent->Copy();
     int mutation_count = 0;
     if (Util::kMutationCountFixed) {
-      mutation_count = kMutations;
+      mutation_count = Util::kMutations;
     } else {
       mutation_count = (rand() % Util::kMutations) + 1;
     }

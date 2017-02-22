@@ -1,8 +1,8 @@
-a,b,cin;
-xor1 XOR,and1 AND
-xor2 XOR,and2 AND
-orr1 ORR;
-s,cout;
+a,b,cin
+s,cout
+xor1 3,and1 1
+xor2 3,and2 1
+orr1 2
 ~
 a -> xor1, and1
 b -> xor1, and1
@@ -10,5 +10,14 @@ cin -> and2, xor2
 xor1 -> xor2, and2
 and1 -> orr1
 and2 -> orr1
-xor2 -> s
-orr1 -> cout
+~
+3
+a,b,cin,s,cout
+0,0,0,0,0
+0,0,1,1,0
+0,1,0,1,0
+0,1,1,0,1
+1,0,0,1,0
+1,0,1,0,1
+1,1,0,0,1
+1,1,1,1,1

@@ -22,8 +22,10 @@ map<int, string> Gate::kDotGraphNodes = {
   {kBuf, "[shape=circle,color=black,penwidth=2]"}
 };
 
+string Gate::kDotGraphOrphanNode = "[shape=circle,color=black,penwidth=3]";
+
 Gate::Gate(int type, string name, int layer)
-    : type_(type), name_(name), layer_(layer), computed_(false) {
+    : type_(type), name_(name), layer_(layer), computed_(false), orphan_(false) {
 
 }
 
@@ -206,6 +208,24 @@ bool Gate::CanTakeInput() {
     case kNnd:
       return inputs_.size() < 2;
   }
+}
+
+void Gate::IsConnectedToInput() {
+  for (Gate* g : inputs_) {
+    if (g->orphan_) {
+      continue;
+    }
+    if (g->type_ == kOnn || g->type_ == kOff) {
+      orphan_ = false;
+      return;
+    }
+    g->IsConnectedToInput();
+    if (!g->orphan_) {
+      orphan_ = false;
+      return;
+    }
+  }
+  orphan_ = true;
 }
 
 Gate::~Gate() {

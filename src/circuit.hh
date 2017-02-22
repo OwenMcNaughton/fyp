@@ -52,6 +52,9 @@ class Circuit {
   void TestAll();
   void TestAllIter(int idx);
   void TestOne();
+
+  void DetectOrphans();
+
   void FindBestPinningsIter(int idx);
   void FindBestPinningsOne();
   void AssignBestPinnings();

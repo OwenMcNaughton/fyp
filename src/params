@@ -1,7 +1,9 @@
 kGens: 1000
-kChildren: 1000
+kChildren: 500
 kMutations: 10
 kMutationCountFixed: 1
 kMaxGenStagnation: 10
-kThreads: 4
+kThreads: 1
 kSeed: 0
+kSaveDotGraphs: 1
+kPruneOrphans: 0

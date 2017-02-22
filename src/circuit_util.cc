@@ -266,6 +266,15 @@ void Circuit::TestOne() {
   }
 }
 
+void Circuit::DetectOrphans() {
+  for (auto& layer : gates_) {
+    for (Gate* g : layer) {
+      g->orphan_ = false;
+      g->IsConnectedToInput();
+    }
+  }
+}
+
 void Circuit::FindBestPinningsIter(int idx) {
   if (idx == inputs_.size() - 1) {
     inputs_[idx]->type_ = Gate::kOff;
@@ -294,6 +303,9 @@ void Circuit::FindBestPinningsOne() {
 
   for (auto& layer : gates_) {
     for (Gate* g : layer) {
+      if (g->orphan_) {
+        continue;
+      }
       int res = g->Compute();
       if (res == -1) {
         res = 0;
@@ -354,6 +366,9 @@ void Circuit::AssignBestPinnings() {
 void Circuit::TestAll() {
   correct_count_ = 0;
   total_count_ = 0;
+  if (Util::kPruneOrphans) {
+    DetectOrphans();
+  }
   FindBestPinningsIter(0);
   AssignBestPinnings();
 
@@ -489,6 +504,7 @@ void Circuit::Load(const string& contents) {
 }
 
 string Circuit::DotGraph() {
+  DetectOrphans();
   string dotgraph = "digraph {\n";
   int out_of = pow(2, inputs_.size());
   int total_out_of = out_of * outputs_.size();
@@ -497,7 +513,10 @@ string Circuit::DotGraph() {
   //   to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
   for (auto& v : gates_) {
     for (Gate* g : v) {
-      dotgraph += "\t" + g->name_ + " " + Gate::kDotGraphNodes[g->type_] + "\n";
+      string node_type = g->orphan_
+        ? Gate::kDotGraphOrphanNode
+        : Gate::kDotGraphNodes[g->type_];
+      dotgraph += "\t" + g->name_ + " " + node_type + "\n";
     }
   }
   for (Gate* g : inputs_) {

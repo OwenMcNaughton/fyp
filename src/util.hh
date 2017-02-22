@@ -18,9 +18,12 @@ class Util {
   static int kGens;
   static int kChildren;
   static int kMutations;
+  static int kMutationCountFixed;
   static int kMaxGenStagnation;
   static int kThreads;
   static int kSeed;
+  static int kSaveDotGraphs;
+  static int kPruneOrphans;
 };
 
 vector<string> Split(const string& s, string delimiter);

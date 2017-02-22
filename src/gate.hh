@@ -25,11 +25,13 @@ class Gate {
   void PrintLayout(int i);
 
   bool CanTakeInput();
+  void IsConnectedToInput();
 
   static const int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf;
   static int kLineOn, kLineOff, kLineUnknown;
   static vector<int> kGates;
   static map<int, string> kDotGraphNodes;
+  static string kDotGraphOrphanNode;
 
   vector<Gate*> inputs_;
   Gate* output_;
@@ -39,6 +41,7 @@ class Gate {
   int idx_;
   bool computed_;
   int stored_answer_;
+  bool orphan_;
 };
 
 #endif

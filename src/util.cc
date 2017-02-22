@@ -15,6 +15,8 @@ int Util::kMutationCountFixed = 0;
 int Util::kMaxGenStagnation = 0;
 int Util::kThreads = 0;
 int Util::kSeed = 0;
+int Util::kSaveDotGraphs = 0;
+int Util::kPruneOrphans = 0;
 
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
@@ -129,8 +131,10 @@ void Util::InitParams(const string& file) {
   Util::kGens = split_map["kGens"];
   Util::kChildren = split_map["kChildren"];
   Util::kMutations = split_map["kMutations"];
-  Util::kMutationCountFixed = split_map["kMutationCountFixed"]
+  Util::kMutationCountFixed = split_map["kMutationCountFixed"];
   Util::kMaxGenStagnation = split_map["kMaxGenStagnation"];
   Util::kThreads = split_map["kThreads"];
   Util::kSeed = split_map["kSeed"];
+  Util::kSaveDotGraphs = split_map["kSaveDotGraphs"];
+  Util::kPruneOrphans = split_map["kPruneOrphans"];
 }
