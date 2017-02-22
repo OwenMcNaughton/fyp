@@ -25,9 +25,11 @@ Circuit::Circuit(const string& contents) {
   Load(contents);
 }
 
-void Circuit::Evolve() {
+void Circuit::Evolve(const string& target) {
   Circuit* circ = new Circuit();
-  circ->Load(ReadFile("../circs/3bitmul.circ"));
+  circ->Load(ReadFile("../circs/" + target ".circ"));
+  SaveDotGraph(circ, "../graphs/", "original");
+  circ->MessUp(1);
   SaveDotGraph(circ, "../graphs/", 0);
 
   vector<Circuit*> historical;
@@ -87,8 +89,13 @@ set<long> Circuit::MakeChildren(
   set<long> new_hashes = {};
   for (int j = 0; j != Util::kChildren; j++) {
     Circuit* child = parent->Copy();
-    int m = (rand() % Util::kMutations) + 1;
-    for (int k = 0; k != 10; k++) {
+    int mutation_count = 0;
+    if (Util::kMutationCountFixed) {
+      mutation_count = kMutations;
+    } else {
+      mutation_count = (rand() % Util::kMutations) + 1;
+    }
+    for (int k = 0; k != mutation_count; k++) {
       child->Mutate();
     }
     long hash = child->Hash();

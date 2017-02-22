@@ -21,10 +21,10 @@ int main(int argc, char** argv) {
     if (strcmp(argv[1], "t") == 0 || strcmp(argv[1], "test") == 0) {
       Test();
     } else {
-      Circuit::Evolve();
+      Circuit::Evolve(argv[1]);
     }
   } else {
-    Circuit::Evolve();
+    Circuit::Evolve(argv[1]);
   }
 
 }

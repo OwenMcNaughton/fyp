@@ -38,5 +38,6 @@ vector<int> FormatTruthDecimal(
   vector<Gate*> outputs);
 
 void SaveDotGraph(Circuit* circ, string folder, int id);
+void SaveDotGraph(Circuit* circ, string folder, string unique);
 
 #endif

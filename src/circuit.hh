@@ -85,7 +85,7 @@ class Circuit {
   }
 
   // { NON UTIL
-  static void Evolve();
+  static void Evolve(const string& target);
   static set<long> MakeChildren(
     Circuit* parent, vector<Circuit*>& children,
     int gen, const set<long>& hashes);

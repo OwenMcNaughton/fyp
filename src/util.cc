@@ -11,6 +11,7 @@ using namespace std;
 int Util::kGens = 0;
 int Util::kChildren = 0;
 int Util::kMutations = 0;
+int Util::kMutationCountFixed = 0;
 int Util::kMaxGenStagnation = 0;
 int Util::kThreads = 0;
 int Util::kSeed = 0;
@@ -106,6 +107,14 @@ void SaveDotGraph(Circuit* circ, string folder, int id) {
   // system(("dot " + filename).c_str());
 }
 
+void SaveDotGraph(Circuit* circ, string folder, string unique) {
+  circ->TestAll();
+  mkdir(folder.c_str(), ACCESSPERMS);
+  string filename = folder + unique + ".gv";
+  WriteFile(filename, circ->DotGraph());
+  // system(("dot " + filename).c_str());
+}
+
 void Util::InitParams(const string& file) {
   string p = ReadFile(file);
   vector<string> split = Split(p, "\n");
@@ -120,6 +129,7 @@ void Util::InitParams(const string& file) {
   Util::kGens = split_map["kGens"];
   Util::kChildren = split_map["kChildren"];
   Util::kMutations = split_map["kMutations"];
+  Util::kMutationCountFixed = split_map["kMutationCountFixed"]
   Util::kMaxGenStagnation = split_map["kMaxGenStagnation"];
   Util::kThreads = split_map["kThreads"];
   Util::kSeed = split_map["kSeed"];

@@ -41,7 +41,7 @@ Gate* Gate::Copy(map<string, Gate*>& table) {
 }
 
 void Gate::Mutate() {
-  type_ = kGates[rand() % 4];
+  type_ = kGates[rand() % 5];
 }
 
 void Gate::AddInput(Gate* in) {

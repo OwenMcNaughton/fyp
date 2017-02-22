@@ -431,20 +431,32 @@ void Circuit::Load(const string& contents) {
     Gate* g = new Gate(Gate::kOnn, s, -1);
     AddInput(g);
   }
-  for (int i = 2; i != nodes.size(); i++) {
-    vector<string> gates = Split(Strip(nodes[i], '\n'), ",");
-    if (gates[0].size() < 1) {
-      continue;
+  if (nodes.size() == 4 && nodes[2].find("$") != string::npos) {
+    vector<string> cr = Split(nodes[2], "$");
+    for (int i = 0; i != atoi(cr[0].c_str()); i++) {
+      vector<Gate*> layer;
+      gates_.push_back(layer);
+      for (int j = 0; j != atoi(cr[1].c_str()); j++) {
+        Gate* g = new Gate(rand() % 4, to_string(rand()), i);
+        AddGate(g);
+      }
     }
-    vector<Gate*> layer;
-    gates_.push_back(layer);
-    for (auto& s : gates) {
-      vector<string> node = Split(s, " ");
-      if (node.size() < 2) {
+  } else {
+    for (int i = 2; i != nodes.size(); i++) {
+      vector<string> gates = Split(Strip(nodes[i], '\n'), ",");
+      if (gates[0].size() < 1) {
         continue;
       }
-      Gate* g = new Gate(atoi(node[1].c_str()), node[0], i - 2);
-      AddGate(g);
+      vector<Gate*> layer;
+      gates_.push_back(layer);
+      for (auto& s : gates) {
+        vector<string> node = Split(s, " ");
+        if (node.size() < 2) {
+          continue;
+        }
+        Gate* g = new Gate(atoi(node[1].c_str()), node[0], i - 2);
+        AddGate(g);
+      }
     }
   }
   for (auto& s : outputs) {
