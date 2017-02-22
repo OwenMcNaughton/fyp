@@ -4,6 +4,7 @@
 #include "circuit.hh"
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -24,6 +25,9 @@ class Util {
   static int kSeed;
   static int kSaveDotGraphs;
   static int kPruneOrphans;
+  static int kLog;
+
+  static map<string, int> split_map_;
 };
 
 vector<string> Split(const string& s, string delimiter);
@@ -42,5 +46,34 @@ vector<int> FormatTruthDecimal(
 
 void SaveDotGraph(Circuit* circ, string folder, int id);
 void SaveDotGraph(Circuit* circ, string folder, string unique);
+
+class GenerationLog {
+ public:
+  GenerationLog();
+  GenerationLog(const vector<GenerationLog>& logs, Circuit* best);
+
+  vector<int> total_counts_;
+  vector<int> correct_counts_;
+  int dupes_ = 0;
+  Circuit* best_;
+  set<long> hashes_;
+};
+
+class EvolutionLog {
+ public:
+  EvolutionLog(Circuit* skeleton);
+
+  void SaveLog();
+
+  int columns_;
+  vector<int> rows_;
+
+  set<long> hashes_;
+
+  int goal_correct_count_;
+  int goal_total_count_;
+  vector<GenerationLog> generations_;
+};
+
 
 #endif

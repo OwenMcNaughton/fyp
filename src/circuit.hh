@@ -10,6 +10,9 @@
 
 using namespace std;
 
+class GenerationLog;
+class EvolutionLog;
+
 struct Edge {
   Gate* src_;
   Gate* dst_;
@@ -89,9 +92,9 @@ class Circuit {
 
   // { NON UTIL
   static void Evolve(const string& target);
-  static set<long> MakeChildren(
+  static GenerationLog MakeChildren(
     Circuit* parent, vector<Circuit*>& children,
-    int gen, const set<long>& hashes);
+    int gen, const EvolutionLog& elog);
   static set<long> MakeBredChildren(
     vector<Circuit*>& parents, vector<Circuit*>& children,
     int gen, const set<long>& hashes);
@@ -119,6 +122,7 @@ class Circuit {
   int superfluous_score_;
   int decimal_diff_;
   bool bad_ = false;
+  int orphan_count_;
 };
 
 #endif

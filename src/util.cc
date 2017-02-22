@@ -1,5 +1,7 @@
 #include "util.hh"
 
+#include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -17,6 +19,8 @@ int Util::kThreads = 0;
 int Util::kSeed = 0;
 int Util::kSaveDotGraphs = 0;
 int Util::kPruneOrphans = 0;
+int Util::kLog = 0;
+map<string, int> Util::split_map_ = {};
 
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
@@ -120,21 +124,82 @@ void SaveDotGraph(Circuit* circ, string folder, string unique) {
 void Util::InitParams(const string& file) {
   string p = ReadFile(file);
   vector<string> split = Split(p, "\n");
-  map<string, int> split_map;
   for (string& s : split) {
     if (s == "") {
       continue;
     }
     vector<string> parts = Split(s, ":");
-    split_map[Strip(parts[0], ' ')] = atoi(Strip(parts[1], ' ').c_str());
+    Util::split_map_[Strip(parts[0], ' ')] = atoi(Strip(parts[1], ' ').c_str());
   }
-  Util::kGens = split_map["kGens"];
-  Util::kChildren = split_map["kChildren"];
-  Util::kMutations = split_map["kMutations"];
-  Util::kMutationCountFixed = split_map["kMutationCountFixed"];
-  Util::kMaxGenStagnation = split_map["kMaxGenStagnation"];
-  Util::kThreads = split_map["kThreads"];
-  Util::kSeed = split_map["kSeed"];
-  Util::kSaveDotGraphs = split_map["kSaveDotGraphs"];
-  Util::kPruneOrphans = split_map["kPruneOrphans"];
+  Util::kGens = split_map_["kGens"];
+  Util::kChildren = split_map_["kChildren"];
+  Util::kMutations = split_map_["kMutations"];
+  Util::kMutationCountFixed = split_map_["kMutationCountFixed"];
+  Util::kMaxGenStagnation = split_map_["kMaxGenStagnation"];
+  Util::kThreads = split_map_["kThreads"];
+  Util::kSeed = split_map_["kSeed"];
+  Util::kSaveDotGraphs = split_map_["kSaveDotGraphs"];
+  Util::kPruneOrphans = split_map_["kPruneOrphans"];
+  Util::kLog = split_map_["kLog"];
+}
+
+EvolutionLog::EvolutionLog(Circuit* skeleton) {
+  columns_ = skeleton->gates_.size();
+  for (const auto& l : skeleton->gates_) {
+    rows_.push_back(l.size());
+  }
+
+  goal_correct_count_ = pow(2, skeleton->inputs_.size());
+  goal_total_count_ = goal_correct_count_ * skeleton->outputs_.size();
+}
+
+void EvolutionLog::SaveLog() {
+  mkdir("../logs", ACCESSPERMS);
+  string filename = "../logs/elog";
+
+  string contents = "";
+  for (const auto& param : Util::split_map_) {
+    contents += param.first + ": " + to_string(param.second) + "\n";
+  }
+  contents += "columns: " + to_string(columns_) + "\n";
+  contents += "rows: ";
+  for (int i = 0; i < rows_.size(); i++) {
+    contents += to_string(rows_[i]);
+    contents += i == rows_.size() - 1 ? "\n" : ",";
+  }
+  contents += "goal_correct_count: " + to_string(goal_correct_count_) + "\n";
+  contents += "goal_total_count: " + to_string(goal_total_count_) + "\n";
+  contents += "~\n";
+
+  for (const auto glog : generations_) {
+    for (int i : glog.correct_counts_) {
+      contents += to_string(i) + ",";
+    }
+    contents += ";";
+    for (int i : glog.total_counts_) {
+      contents += to_string(i) + ",";
+    }
+    contents += "\n";
+  }
+
+  WriteFile(filename, contents);
+}
+
+GenerationLog::GenerationLog() {
+
+}
+
+GenerationLog::GenerationLog(const vector<GenerationLog>& logs, Circuit* best) {
+  for (const auto& glog : logs) {
+    correct_counts_.reserve(
+      correct_counts_.size() + glog.correct_counts_.size());
+      correct_counts_.insert(correct_counts_.end(),
+      glog.correct_counts_.begin(), glog.correct_counts_.end());
+    total_counts_.reserve(total_counts_.size() + glog.total_counts_.size());
+    total_counts_.insert(total_counts_.end(),
+      glog.total_counts_.begin(), glog.total_counts_.end());
+    dupes_ += glog.dupes_;
+  }
+  sort(total_counts_.begin(), total_counts_.end());
+  sort(correct_counts_.begin(), correct_counts_.end());
 }

@@ -267,10 +267,14 @@ void Circuit::TestOne() {
 }
 
 void Circuit::DetectOrphans() {
+  orphan_count_ = 0;
   for (auto& layer : gates_) {
     for (Gate* g : layer) {
       g->orphan_ = false;
       g->IsConnectedToInput();
+      if (g->orphan_) {
+        orphan_count_++;
+      }
     }
   }
 }

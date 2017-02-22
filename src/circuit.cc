@@ -15,8 +15,6 @@ using namespace std;
 map<vector<int>, map<string, int>> Circuit::kTruthTable = {};
 vector<int> Circuit::kTruthDecimal = {};
 
-vector<Circuit*> bests;
-
 Circuit::Circuit() {
 
 }
@@ -28,6 +26,9 @@ Circuit::Circuit(const string& contents) {
 void Circuit::Evolve(const string& target) {
   Circuit* circ = new Circuit();
   circ->Load(ReadFile("../circs/" + target + ".circ"));
+
+  EvolutionLog elog(circ);
+
   if (Util::kSaveDotGraphs) {
     SaveDotGraph(circ, "../graphs/", "original");
   }
@@ -39,36 +40,46 @@ void Circuit::Evolve(const string& target) {
   vector<Circuit*> historical;
   historical.reserve(Util::kGens);
   historical[0] = circ;
-  set<long> hashes = {};
   int stag_count = 0;
   ThreadPool pool(Util::kThreads);
-  bests.reserve(Util::kThreads);
 
   for (int i = 1; i != Util::kGens; i++) {
-    vector<future<set<long>>> futures;
+    vector<future<GenerationLog>> futures;
     cout << "GEN: " << i << ", Dupes: ";
-    vector<set<long>> new_hashes;
     for (int j = 0; j < Util::kThreads; j++) {
       Circuit* circ2 = circ->Copy();
-      auto fut = pool.enqueue([circ2, i, j, hashes, &new_hashes]() {
+      auto fut = pool.enqueue([circ2, i, j, elog]() {
         vector<Circuit*> children;
-        set<long> new_hash = Circuit::MakeChildren(circ2, children, i, hashes);
+        auto glog = Circuit::MakeChildren(circ2, children, i, elog);
         CircuitSort(children);
-        bests[j] = Circuit::GetBestChild(children);
-        return new_hash;
+        if (Util::kLog) {
+          for (Circuit* c : children) {
+            glog.correct_counts_.push_back(c->correct_count_);
+            glog.total_counts_.push_back(c->total_count_);
+          }
+        }
+        glog.best_ = Circuit::GetBestChild(children);
+        return glog;
       });
       futures.push_back(move(fut));
     }
 
     int best_count = 0;
     int f = 0;
+    vector<GenerationLog> glogs;
     for (int j = 0; j < Util::kThreads; j++) {
-      auto new_hash = futures[j].get();
-      hashes.insert(new_hash.begin(), new_hash.end());
-      if (bests[j] && bests[j]->total_count_ >= best_count) {
-        circ = bests[j];
-        best_count = bests[j]->total_count_;
+      auto glog = futures[j].get();
+      elog.hashes_.insert(glog.hashes_.begin(), glog.hashes_.end());
+      if (glog.best_ && glog.best_->total_count_ >= best_count) {
+        circ = glog.best_;
+        best_count = glog.best_->total_count_;
       }
+      glogs.push_back(glog);
+    }
+    if (Util::kLog){
+      GenerationLog merged_glog(glogs, circ);
+      elog.generations_.push_back(merged_glog);
+      elog.SaveLog();
     }
 
     circ->BinTruthToDec();
@@ -88,11 +99,11 @@ void Circuit::Evolve(const string& target) {
   }
 }
 
-set<long> Circuit::MakeChildren(
-    Circuit* parent, vector<Circuit*>& children, int gen, const set<long>& hashes) {
-  int dupes = 0;
+GenerationLog Circuit::MakeChildren(
+    Circuit* parent, vector<Circuit*>& children,
+    int gen, const EvolutionLog& elog) {
   children.push_back(parent->Copy());
-  set<long> new_hashes = {};
+  GenerationLog glog;
   for (int j = 0; j != Util::kChildren; j++) {
     Circuit* child = parent->Copy();
     int mutation_count = 0;
@@ -105,12 +116,12 @@ set<long> Circuit::MakeChildren(
       child->Mutate();
     }
     long hash = child->Hash();
-    if (hashes.count(hash) == 0) {
+    if (elog.hashes_.count(hash) == 0) {
       children.push_back(child);
-      new_hashes.insert(hash);
+      glog.hashes_.insert(hash);
     } else {
-      dupes++;
-      if (dupes > 100000) {
+      glog.dupes_++;
+      if (glog.dupes_ > 100000) {
         // exit(0);
         break;
       }
@@ -118,8 +129,8 @@ set<long> Circuit::MakeChildren(
       j--;
     }
   }
-  cout << dupes << " ";
-  return new_hashes;
+  cout << glog.dupes_ << " ";
+  return glog;
 }
 
 void Circuit::DetectStagnation(
