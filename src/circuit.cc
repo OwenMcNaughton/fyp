@@ -21,6 +21,10 @@ Circuit::Circuit() {
 
 Circuit::Circuit(const string& contents) {
   Load(contents);
+  gate_count_ = 0;
+  for (const auto& l : gates_) {
+    gate_count_ += l.size();
+  }
 }
 
 void Circuit::Evolve(const string& target) {
@@ -32,7 +36,11 @@ void Circuit::Evolve(const string& target) {
   if (Util::kSaveDotGraphs) {
     SaveDotGraph(circ, "../graphs/", "original");
   }
-  circ->MessUp(1);
+  if (target.find("starter") == string::npos) {
+    // circ->MessUp(Util::kMessUp);
+  } else {
+    // circ->FillEdges();
+  }
   if (Util::kSaveDotGraphs) {
     SaveDotGraph(circ, "../graphs/", 0);
   }
@@ -64,7 +72,7 @@ void Circuit::Evolve(const string& target) {
       futures.push_back(move(fut));
     }
 
-    int best_count = 0;
+    int best_count = circ->total_count_;
     int f = 0;
     vector<GenerationLog> glogs;
     for (int j = 0; j < Util::kThreads; j++) {
@@ -84,8 +92,10 @@ void Circuit::Evolve(const string& target) {
 
     circ->BinTruthToDec();
 
+    float actual = circ->total_count_ / float(elog.goal_total_count_);
     cout << "\n\tBestTotal: " << circ->total_count_ << " BestExact: " <<
-      circ->correct_count_ << " DecimalDiff: " << circ->decimal_diff_ << endl;
+      circ->correct_count_ << " DecimalDiff: " << circ->decimal_diff_ <<
+      "\tTOTAL_PERCENT: " << actual << endl;
 
     // DetectStagnation(historical, &i, best_count, &stag_count, circ);
 
@@ -93,7 +103,8 @@ void Circuit::Evolve(const string& target) {
       SaveDotGraph(circ, "../graphs/", i + 1);
     }
 
-    if (circ->correct_count_ == pow(2, circ->inputs_.size())) {
+    float thresh = Util::kThreshold / 1000.0f;
+    if (actual >= thresh) {
       exit(0);
     }
   }

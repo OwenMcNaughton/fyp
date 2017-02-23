@@ -30,6 +30,8 @@ Circuit* Circuit::Copy() {
     c->AddEdge(edge->src_->name_, edge->dst_->name_);
   }
 
+  c->gate_count_ = gate_count_;
+
   return c;
 }
 
@@ -41,6 +43,14 @@ void Circuit::Mutate() {
   }
   legal_mutation_types.push_back(bind(&Circuit::MutateNewEdge, this));
   legal_mutation_types.push_back(bind(&Circuit::MutateExistingGate, this));
+
+  // if (rand() % 2 == 0) {
+  //   MutateExistingGate();
+  // } else {
+  //   MutateRemoveEdge();
+  //   MutateNewEdge();
+  //   // MutateAnInput();
+  // }
 
   legal_mutation_types[rand() % legal_mutation_types.size()]();
 }
@@ -114,6 +124,21 @@ void Circuit::MutateNewEdge() {
     }
     AddEdge(edge.first, edge.second);
   }
+}
+
+void Circuit::MutateAnInput() {
+  auto layer = gates_[rand() % gates_.size()];
+  Gate* g = layer[rand() % layer.size()];
+
+  Gate* new_input = PickRandomSrc(g->layer_);
+  int idx = rand() % g->inputs_.size();
+  for (int i = 0; i < edges_.size(); i++) {
+    if (edges_[i]->src_ == g->inputs_[idx] && edges_[i]->dst_ == g) {
+      edges_.erase(edges_.begin() + i--);
+    }
+  }
+  edges_.push_back(new Edge(new_input, g, new_input->layer_, g->layer_));
+  g->inputs_[idx] = new_input;
 }
 
 void Circuit::MutateRemoveEdge() {
@@ -275,6 +300,24 @@ void Circuit::DetectOrphans() {
       if (g->orphan_) {
         orphan_count_++;
       }
+    }
+  }
+}
+
+void Circuit::DetectSuperfluous() {
+  DetectOrphans();
+  for (auto& l : gates_) {
+    for (Gate* g : l) {
+      g->childfree_ = true;
+    }
+  }
+  for (Gate* g : outputs_) {
+    g->IsConnectedToOutput();
+  }
+  superfluous_count_ = 0;
+  for (auto& l : gates_) {
+    for (Gate* g : l) {
+      superfluous_count_ += g->childfree_ || g->orphan_ ? 1 : 0;
     }
   }
 }
@@ -517,7 +560,7 @@ string Circuit::DotGraph() {
   //   to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
   for (auto& v : gates_) {
     for (Gate* g : v) {
-      string node_type = g->orphan_
+      string node_type = g->orphan_ || g->childfree_
         ? Gate::kDotGraphOrphanNode
         : Gate::kDotGraphNodes[g->type_];
       dotgraph += "\t" + g->name_ + " " + node_type + "\n";
@@ -629,6 +672,31 @@ pair<Gate*, Gate*> Circuit::MakeRandomEdge() {
 void Circuit::MessUp(int factor) {
   for (int i = 0; i != factor; i++) {
     Mutate();
+  }
+}
+
+// TODO fix for >2 input gates
+void Circuit::FillEdges() {
+  for (int i = 0; i != gates_.size() * 3; i++) {
+    MutateNewEdge();
+  }
+  return;
+  for (auto& l : gates_) {
+    for (Gate* g : l) {
+      Gate* i1 = PickRandomSrc(g->layer_);
+      Gate* i2 = PickRandomSrc(g->layer_);
+      AddEdge(i1, g);
+      AddEdge(i2, g);
+    }
+  }
+}
+
+Gate* Circuit::PickRandomSrc(int end_before) {
+  if (rand() % gates_.size() == 0 || end_before == 0) {
+    return inputs_[rand() % inputs_.size()];
+  } else {
+    auto layer = gates_[rand() % end_before];
+    return layer[rand() % layer.size()];
   }
 }
 

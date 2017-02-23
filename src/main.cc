@@ -6,25 +6,17 @@
 using namespace std;
 
 int main(int argc, char** argv) {
-  Util::InitParams();
+  Util::InitParams(argc, argv);
 
   int seed = 0;
   if (Util::kSeed == 0) {
-    seed = time(NULL);
+    seed = time(NULL) * (Util::kLogIter + 1);
+    Util::kSeed = seed;
   } else {
     seed = Util::kSeed;
   }
   cout << "SEED: " << seed << endl;
   srand(seed);
 
-  if (argc > 1) {
-    if (strcmp(argv[1], "t") == 0 || strcmp(argv[1], "test") == 0) {
-      Test();
-    } else {
-      Circuit::Evolve(argv[1]);
-    }
-  } else {
-    Circuit::Evolve(argv[1]);
-  }
-
+  Circuit::Evolve(argv[1]);
 }

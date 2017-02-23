@@ -13,6 +13,8 @@ using namespace std;
 int Util::kGens = 0;
 int Util::kChildren = 0;
 int Util::kMutations = 0;
+int Util::kThreshold = 0;
+int Util::kMessUp = 0;
 int Util::kMutationCountFixed = 0;
 int Util::kMaxGenStagnation = 0;
 int Util::kThreads = 0;
@@ -20,6 +22,7 @@ int Util::kSeed = 0;
 int Util::kSaveDotGraphs = 0;
 int Util::kPruneOrphans = 0;
 int Util::kLog = 0;
+int Util::kLogIter = 0;
 map<string, int> Util::split_map_ = {};
 
 vector<string> Split(const string& s, string delimiter) {
@@ -121,7 +124,7 @@ void SaveDotGraph(Circuit* circ, string folder, string unique) {
   // system(("dot " + filename).c_str());
 }
 
-void Util::InitParams(const string& file) {
+void Util::InitParams(int argc, char** argv, const string& file) {
   string p = ReadFile(file);
   vector<string> split = Split(p, "\n");
   for (string& s : split) {
@@ -131,9 +134,24 @@ void Util::InitParams(const string& file) {
     vector<string> parts = Split(s, ":");
     Util::split_map_[Strip(parts[0], ' ')] = atoi(Strip(parts[1], ' ').c_str());
   }
+
+  if (argc > 1) {
+    split_map_["kLogIter"] = atoi(argv[2]);
+  }
+  if (argc > 2) {
+    split_map_["kThreshold"] = atoi(argv[3]);
+  }
+  if (argc > 3) {
+    if (atoi(argv[4]) != -1) {
+      split_map_["kMessUp"] = atoi(argv[4]);
+    }
+  }
+
   Util::kGens = split_map_["kGens"];
   Util::kChildren = split_map_["kChildren"];
   Util::kMutations = split_map_["kMutations"];
+  Util::kThreshold = split_map_["kThreshold"];
+  Util::kMessUp = split_map_["kMessUp"];
   Util::kMutationCountFixed = split_map_["kMutationCountFixed"];
   Util::kMaxGenStagnation = split_map_["kMaxGenStagnation"];
   Util::kThreads = split_map_["kThreads"];
@@ -141,6 +159,7 @@ void Util::InitParams(const string& file) {
   Util::kSaveDotGraphs = split_map_["kSaveDotGraphs"];
   Util::kPruneOrphans = split_map_["kPruneOrphans"];
   Util::kLog = split_map_["kLog"];
+  Util::kLogIter = split_map_["kLogIter"];
 }
 
 EvolutionLog::EvolutionLog(Circuit* skeleton) {
@@ -148,14 +167,14 @@ EvolutionLog::EvolutionLog(Circuit* skeleton) {
   for (const auto& l : skeleton->gates_) {
     rows_.push_back(l.size());
   }
-
   goal_correct_count_ = pow(2, skeleton->inputs_.size());
   goal_total_count_ = goal_correct_count_ * skeleton->outputs_.size();
 }
 
 void EvolutionLog::SaveLog() {
   mkdir("../logs", ACCESSPERMS);
-  string filename = "../logs/elog";
+  char s[50];
+  sprintf(s, "../logs/elog%05d", Util::kLogIter);
 
   string contents = "";
   for (const auto& param : Util::split_map_) {
@@ -171,6 +190,15 @@ void EvolutionLog::SaveLog() {
   contents += "goal_total_count: " + to_string(goal_total_count_) + "\n";
   contents += "~\n";
 
+  generations_.back().best_->DetectSuperfluous();
+  int gates_used = generations_.back().best_->gate_count_ -
+    generations_.back().best_->superfluous_count_;
+  contents += "gates_used: " + to_string(gates_used);
+  contents += "total_count: " +
+    to_string(generations_.back().best_->total_count_);
+  contents += "percent: " + to_string(generations_.back().best_->total_count_ /
+    float(goal_total_count_));
+
   for (const auto glog : generations_) {
     for (int i : glog.correct_counts_) {
       contents += to_string(i) + ",";
@@ -182,7 +210,7 @@ void EvolutionLog::SaveLog() {
     contents += "\n";
   }
 
-  WriteFile(filename, contents);
+  WriteFile(s, contents);
 }
 
 GenerationLog::GenerationLog() {

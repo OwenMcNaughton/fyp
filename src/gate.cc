@@ -25,7 +25,8 @@ map<int, string> Gate::kDotGraphNodes = {
 string Gate::kDotGraphOrphanNode = "[shape=circle,color=black,penwidth=3]";
 
 Gate::Gate(int type, string name, int layer)
-    : type_(type), name_(name), layer_(layer), computed_(false), orphan_(false) {
+    : type_(type), name_(name), layer_(layer),
+      computed_(false), orphan_(false), childfree_(false) {
 
 }
 
@@ -226,6 +227,13 @@ void Gate::IsConnectedToInput() {
     }
   }
   orphan_ = true;
+}
+
+void Gate::IsConnectedToOutput() {
+  childfree_ = false;
+  for (Gate* g : inputs_) {
+    g->IsConnectedToOutput();
+  }
 }
 
 Gate::~Gate() {

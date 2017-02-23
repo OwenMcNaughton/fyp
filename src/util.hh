@@ -14,11 +14,14 @@ class Circuit;
 
 class Util {
  public:
-  static void InitParams(const string& file = "../src/params");
+  static void InitParams(
+    int argc, char** argv, const string& file = "../src/params");
 
   static int kGens;
   static int kChildren;
   static int kMutations;
+  static int kThreshold;
+  static int kMessUp;
   static int kMutationCountFixed;
   static int kMaxGenStagnation;
   static int kThreads;
@@ -26,6 +29,7 @@ class Util {
   static int kSaveDotGraphs;
   static int kPruneOrphans;
   static int kLog;
+  static int kLogIter;
 
   static map<string, int> split_map_;
 };

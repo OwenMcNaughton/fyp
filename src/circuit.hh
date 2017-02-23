@@ -48,6 +48,7 @@ class Circuit {
   Gate* PickRandomFromLayersStartingFrom(int layer);
   Gate* PickRandomFromLayersEndingBefore(int layer);
   Gate* PickRandomEdgeSrc(int end_before);
+  Gate* PickRandomSrc(int end_before);
   Gate* PickRandomEdgeDst(int start_at);
   pair<Gate*, Gate*> MakeRandomEdge();
 
@@ -57,6 +58,7 @@ class Circuit {
   void TestOne();
 
   void DetectOrphans();
+  void DetectSuperfluous();
 
   void FindBestPinningsIter(int idx);
   void FindBestPinningsOne();
@@ -77,8 +79,10 @@ class Circuit {
   void MutateNewEdge();
   void MutateExistingEdge();
   void MutateRemoveEdge();
+  void MutateAnInput();
 
   void MessUp(int factor);
+  void FillEdges();
   void BinTruthToDec();
 
   static int GetDanglingCount(Circuit* circ);
@@ -122,7 +126,9 @@ class Circuit {
   int superfluous_score_;
   int decimal_diff_;
   bool bad_ = false;
+  int gate_count_;
   int orphan_count_;
+  int superfluous_count_;
 };
 
 #endif

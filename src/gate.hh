@@ -26,6 +26,7 @@ class Gate {
 
   bool CanTakeInput();
   void IsConnectedToInput();
+  void IsConnectedToOutput();
 
   static const int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf;
   static int kLineOn, kLineOff, kLineUnknown;
@@ -42,6 +43,7 @@ class Gate {
   bool computed_;
   int stored_answer_;
   bool orphan_;
+  bool childfree_;
 };
 
 #endif
