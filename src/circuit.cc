@@ -25,11 +25,11 @@ Circuit::Circuit(const string& contents) {
   for (const auto& l : gates_) {
     gate_count_ += l.size();
   }
+  genome_size_ = gate_count_ + (gate_count_ + outputs_.size()) * 2;
 }
 
 void Circuit::Evolve(const string& target) {
-  Circuit* circ = new Circuit();
-  circ->Load(ReadFile("../circs/" + target + ".circ"));
+  Circuit* circ = new Circuit(ReadFile("../circs/" + target + ".circ"));
 
   EvolutionLog elog(circ);
 
@@ -37,9 +37,9 @@ void Circuit::Evolve(const string& target) {
     SaveDotGraph(circ, "../graphs/", "original");
   }
   if (target.find("starter") == string::npos) {
-    // circ->MessUp(Util::kMessUp);
+    circ->MessUp(Util::kMessUp);
   } else {
-    // circ->FillEdges();
+    circ->FillEdges();
   }
   if (Util::kSaveDotGraphs) {
     SaveDotGraph(circ, "../graphs/", 0);
@@ -115,12 +115,15 @@ GenerationLog Circuit::MakeChildren(
     int gen, const EvolutionLog& elog) {
   children.push_back(parent->Copy());
   GenerationLog glog;
+  int mutation_count = 0;
+  if (Util::kMutationMode == 0) {
+    mutation_count = Util::kMutations;
+  } else {
+    mutation_count = int((Util::kMutatePercent / 100.0) * parent->genome_size_);
+  }
   for (int j = 0; j != Util::kChildren; j++) {
     Circuit* child = parent->Copy();
-    int mutation_count = 0;
-    if (Util::kMutationCountFixed) {
-      mutation_count = Util::kMutations;
-    } else {
+    if (Util::kMutationMode == 1){
       mutation_count = (rand() % Util::kMutations) + 1;
     }
     for (int k = 0; k != mutation_count; k++) {

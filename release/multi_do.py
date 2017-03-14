@@ -5,12 +5,12 @@ from subprocess import call, Popen, PIPE
 @click.command()
 @click.argument('circfile')
 @click.argument('iterations')
-@click.argument('threshold')
-@click.option('--messup', '-m', default=-1)
-def iter(circfile, iterations, threshold, messup):
+@click.argument('folder')
+@click.option('--threshold', '-t', default=1000)
+def iter(circfile, iterations, folder, threshold):
   for i in range(int(iterations)):
     try:
-      p = Popen(['./main', circfile, str(i), str(threshold), str(messup)],
+      p = Popen(['./main', circfile, str(i), str(threshold), folder],
         stdin=PIPE, stderr=PIPE)
       output, err = p.communicate()
     except OSError:

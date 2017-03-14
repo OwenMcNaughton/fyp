@@ -20,9 +20,11 @@ class Util {
   static int kGens;
   static int kChildren;
   static int kMutations;
+  static int kMutatePercent;
+  // 0 for exact kMutations, 1 for rand() % kMutations, 2 for kMutatePercent.
+  static int kMutationMode;
   static int kThreshold;
   static int kMessUp;
-  static int kMutationCountFixed;
   static int kMaxGenStagnation;
   static int kThreads;
   static int kSeed;
@@ -30,6 +32,7 @@ class Util {
   static int kPruneOrphans;
   static int kLog;
   static int kLogIter;
+  static string kLogFolder;
 
   static map<string, int> split_map_;
 };

@@ -1,7 +1,8 @@
-kGens: 1000
-kChildren: 100
+kGens: 100
+kChildren: 2500
 kMutations: 20
-kMutationCountFixed: 0
+kMutatePercent: 5
+kMutationMode: 1
 kThreshold: 900
 kMessUp: 25
 kMaxGenStagnation: 10

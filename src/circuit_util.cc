@@ -31,6 +31,7 @@ Circuit* Circuit::Copy() {
   }
 
   c->gate_count_ = gate_count_;
+  c->genome_size_ = genome_size_;
 
   return c;
 }
@@ -493,14 +494,31 @@ void Circuit::Load(const string& contents) {
     Gate* g = new Gate(Gate::kOnn, s, -1);
     AddInput(g);
   }
-  if (nodes.size() == 4 && nodes[2].find("$") != string::npos) {
-    vector<string> cr = Split(nodes[2], "$");
-    for (int i = 0; i != atoi(cr[0].c_str()); i++) {
-      vector<Gate*> layer;
-      gates_.push_back(layer);
-      for (int j = 0; j != atoi(cr[1].c_str()); j++) {
-        Gate* g = new Gate(rand() % 4, to_string(rand()), i);
-        AddGate(g);
+  if (nodes.size() == 4) {
+    if (nodes[2].find("$") != string::npos) {
+      vector<string> cr = Split(nodes[2], "$");
+      for (int i = 0; i != atoi(cr[0].c_str()); i++) {
+        vector<Gate*> layer;
+        gates_.push_back(layer);
+        for (int j = 0; j != atoi(cr[1].c_str()); j++) {
+          Gate* g = new Gate(rand() % 4, to_string(rand()), i);
+          AddGate(g);
+        }
+      }
+    } else {
+      if (nodes[2].find("#") != string::npos) {
+        vector<string> cr = Split(nodes[2], "#");
+        vector<string> rc = Split(cr[1], ",");
+        int i = 0;
+        for (auto& c : rc) {
+          vector<Gate*> layer;
+          gates_.push_back(layer);
+          for (int j = 0; j != atoi(c.c_str()); j++) {
+            Gate* g = new Gate(rand() % 4, to_string(rand()), i);
+            AddGate(g);
+          }
+          i++;
+        }
       }
     }
   } else {
@@ -677,10 +695,6 @@ void Circuit::MessUp(int factor) {
 
 // TODO fix for >2 input gates
 void Circuit::FillEdges() {
-  for (int i = 0; i != gates_.size() * 3; i++) {
-    MutateNewEdge();
-  }
-  return;
   for (auto& l : gates_) {
     for (Gate* g : l) {
       Gate* i1 = PickRandomSrc(g->layer_);

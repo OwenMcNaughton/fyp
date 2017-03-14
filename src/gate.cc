@@ -22,7 +22,7 @@ map<int, string> Gate::kDotGraphNodes = {
   {kBuf, "[shape=circle,color=black,penwidth=2]"}
 };
 
-string Gate::kDotGraphOrphanNode = "[shape=circle,color=black,penwidth=3]";
+string Gate::kDotGraphOrphanNode = "[shape=circle,color=black,style=dashed]";
 
 Gate::Gate(int type, string name, int layer)
     : type_(type), name_(name), layer_(layer),

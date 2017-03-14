@@ -13,9 +13,10 @@ using namespace std;
 int Util::kGens = 0;
 int Util::kChildren = 0;
 int Util::kMutations = 0;
+int Util::kMutatePercent = 0;
+int Util::kMutationMode = 0;
 int Util::kThreshold = 0;
 int Util::kMessUp = 0;
-int Util::kMutationCountFixed = 0;
 int Util::kMaxGenStagnation = 0;
 int Util::kThreads = 0;
 int Util::kSeed = 0;
@@ -24,6 +25,7 @@ int Util::kPruneOrphans = 0;
 int Util::kLog = 0;
 int Util::kLogIter = 0;
 map<string, int> Util::split_map_ = {};
+string Util::kLogFolder = "";
 
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
@@ -135,6 +137,7 @@ void Util::InitParams(int argc, char** argv, const string& file) {
     Util::split_map_[Strip(parts[0], ' ')] = atoi(Strip(parts[1], ' ').c_str());
   }
 
+
   if (argc > 1) {
     split_map_["kLogIter"] = atoi(argv[2]);
   }
@@ -142,17 +145,20 @@ void Util::InitParams(int argc, char** argv, const string& file) {
     split_map_["kThreshold"] = atoi(argv[3]);
   }
   if (argc > 3) {
-    if (atoi(argv[4]) != -1) {
-      split_map_["kMessUp"] = atoi(argv[4]);
-    }
+    mkdir("../logs", ACCESSPERMS);
+    Util::kLogFolder = argv[4];
+    char s[50];
+    sprintf(s, "../logs/%s", Util::kLogFolder.c_str());
+    mkdir(s, ACCESSPERMS);
   }
 
   Util::kGens = split_map_["kGens"];
   Util::kChildren = split_map_["kChildren"];
   Util::kMutations = split_map_["kMutations"];
+  Util::kMutatePercent = split_map_["kMutatePercent"];
+  Util::kMutationMode = split_map_["kMutationMode"];
   Util::kThreshold = split_map_["kThreshold"];
   Util::kMessUp = split_map_["kMessUp"];
-  Util::kMutationCountFixed = split_map_["kMutationCountFixed"];
   Util::kMaxGenStagnation = split_map_["kMaxGenStagnation"];
   Util::kThreads = split_map_["kThreads"];
   Util::kSeed = split_map_["kSeed"];
@@ -172,9 +178,8 @@ EvolutionLog::EvolutionLog(Circuit* skeleton) {
 }
 
 void EvolutionLog::SaveLog() {
-  mkdir("../logs", ACCESSPERMS);
   char s[50];
-  sprintf(s, "../logs/elog%05d", Util::kLogIter);
+  sprintf(s, "../logs/%s/elog%05d", Util::kLogFolder.c_str(), Util::kLogIter);
 
   string contents = "";
   for (const auto& param : Util::split_map_) {
@@ -193,23 +198,24 @@ void EvolutionLog::SaveLog() {
   generations_.back().best_->DetectSuperfluous();
   int gates_used = generations_.back().best_->gate_count_ -
     generations_.back().best_->superfluous_count_;
-  contents += "gates_used: " + to_string(gates_used);
+  contents += "gates_used: " + to_string(gates_used) + "\n";
   contents += "total_count: " +
-    to_string(generations_.back().best_->total_count_);
+    to_string(generations_.back().best_->total_count_) + "\n";
   contents += "percent: " + to_string(generations_.back().best_->total_count_ /
-    float(goal_total_count_));
+    float(goal_total_count_)) + "\n";
 
-  for (const auto glog : generations_) {
-    for (int i : glog.correct_counts_) {
-      contents += to_string(i) + ",";
-    }
-    contents += ";";
-    for (int i : glog.total_counts_) {
-      contents += to_string(i) + ",";
-    }
-    contents += "\n";
-  }
+  // for (const auto glog : generations_) {
+  //   for (int i : glog.correct_counts_) {
+  //     contents += to_string(i) + ",";
+  //   }
+  //   contents += ";";
+  //   for (int i : glog.total_counts_) {
+  //     contents += to_string(i) + ",";
+  //   }
+  //   contents += "\n";
+  // }
 
+  cout << s << endl;
   WriteFile(s, contents);
 }
 
