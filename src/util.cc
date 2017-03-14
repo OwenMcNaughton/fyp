@@ -26,6 +26,7 @@ int Util::kLog = 0;
 int Util::kLogIter = 0;
 map<string, int> Util::split_map_ = {};
 string Util::kLogFolder = "";
+vector<int> Util::kLegalGateTypes = {};
 
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
@@ -134,6 +135,16 @@ void Util::InitParams(int argc, char** argv, const string& file) {
       continue;
     }
     vector<string> parts = Split(s, ":");
+    if (Strip(parts[0], ' ') == "kLegalGateTypes") {
+      vector<string> legal_gates = Split(Strip(parts[1], ' '), ",");
+      if (legal_gates.size() > 1) {
+        for (auto& lg : legal_gates) {
+          kLegalGateTypes.push_back(atoi(lg.c_str()));
+        }
+      } else {
+        kLegalGateTypes = Gate::kGates;
+      }
+    }
     Util::split_map_[Strip(parts[0], ' ')] = atoi(Strip(parts[1], ' ').c_str());
   }
 

@@ -489,6 +489,14 @@ void Circuit::Load(const string& contents) {
   vector<string> inputs = Split(nodes[0], ",");
   vector<string> outputs = Split(nodes[1], ",");
   vector<string> edges = Split(split[1], "\n");
+  vector<string> truth = Split(split[split.size() == 4 ? 3 : 2], "\n");
+  if (split.size() == 4) {
+    vector<string> legal_gate_types = Split(split[2], ",");
+    Util::kLegalGateTypes.clear();
+    for (auto& lgt : legal_gate_types) {
+      Util::kLegalGateTypes.push_back(atoi(lgt.c_str()));
+    }
+  }
 
   for (auto& s : inputs) {
     Gate* g = new Gate(Gate::kOnn, s, -1);
@@ -496,6 +504,7 @@ void Circuit::Load(const string& contents) {
   }
   if (nodes.size() == 4) {
     if (nodes[2].find("$") != string::npos) {
+      // Specifying rows and column counts
       vector<string> cr = Split(nodes[2], "$");
       for (int i = 0; i != atoi(cr[0].c_str()); i++) {
         vector<Gate*> layer;
@@ -506,6 +515,7 @@ void Circuit::Load(const string& contents) {
         }
       }
     } else {
+      // Specifying each row size
       if (nodes[2].find("#") != string::npos) {
         vector<string> cr = Split(nodes[2], "#");
         vector<string> rc = Split(cr[1], ",");
@@ -522,6 +532,7 @@ void Circuit::Load(const string& contents) {
       }
     }
   } else {
+    // Specifying gates precisely
     for (int i = 2; i != nodes.size(); i++) {
       vector<string> gates = Split(Strip(nodes[i], '\n'), ",");
       if (gates[0].size() < 1) {
@@ -556,11 +567,10 @@ void Circuit::Load(const string& contents) {
     }
   }
 
-  vector<string> truth_split = Split(split[2], "\n");
-  int input_size = atoi(truth_split[1].c_str());
+  int input_size = atoi(truth[1].c_str());
   vector<vector<string>> truth_table;
-  for (int i = 2; i < truth_split.size() - 1; i++) {
-    vector<string> row = Split(truth_split[i], ",");
+  for (int i = 2; i < truth.size() - 1; i++) {
+    vector<string> row = Split(truth[i], ",");
     truth_table.push_back(row);
   }
   Circuit::kTruthTable = FormatTruthTable(truth_table, input_size);

@@ -1,6 +1,6 @@
 kGens: 100
 kChildren: 2500
-kMutations: 20
+kMutations: 10
 kMutatePercent: 5
 kMutationMode: 1
 kThreshold: 900
@@ -12,3 +12,4 @@ kSaveDotGraphs: 1
 kPruneOrphans: 1
 kLog: 1
 kLogIter: 0
+kLegalGateTypes: 1,2,3

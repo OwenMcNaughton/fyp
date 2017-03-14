@@ -1,7 +1,7 @@
 #include "gate.hh"
 
+#include "util.hh"
 #include <iostream>
-
 
 const int Gate::kNot = 0, Gate::kAnd = 1,
   Gate::kOrr = 2, Gate::kXor = 3, Gate::kNnd = 4,
@@ -44,7 +44,7 @@ Gate* Gate::Copy(map<string, Gate*>& table) {
 }
 
 void Gate::Mutate() {
-  type_ = kGates[rand() % 5];
+  type_ = Util::kLegalGateTypes[rand() % Util::kLegalGateTypes.size()];
 }
 
 void Gate::AddInput(Gate* in) {

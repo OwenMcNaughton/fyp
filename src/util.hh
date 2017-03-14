@@ -33,6 +33,7 @@ class Util {
   static int kLog;
   static int kLogIter;
   static string kLogFolder;
+  static vector<int> kLegalGateTypes;
 
   static map<string, int> split_map_;
 };
