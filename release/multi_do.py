@@ -10,8 +10,8 @@ from subprocess import call, Popen, PIPE
 def iter(circfile, iterations, folder, threshold):
   for i in range(int(iterations)):
     try:
-      p = Popen(['./main', circfile, str(i), str(threshold), folder],
-        stdin=PIPE, stderr=PIPE)
+      p = Popen(['./main', circfile, str(i), str(threshold), folder])
+      print("./main " + circfile + " " + str(i) + " " + str(threshold) + " " + folder)
       output, err = p.communicate()
     except OSError:
       pass

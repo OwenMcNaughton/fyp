@@ -95,6 +95,20 @@ void Circuit::MutateExistingGate() {
   }
   Gate* mutated = gates_[layer][rand() % gates_[layer].size()];
   mutated->Mutate();
+  if (mutated->ExpectedInputCount() > mutated->inputs_.size()) {
+    Gate* i1 = PickRandomSrc(mutated->layer_);
+    AddEdge(i1, mutated);
+  }
+  if (mutated->ExpectedInputCount() < mutated->inputs_.size()) {
+    Gate* to_delete = mutated->inputs_.back();
+    for (int i = 0; i < edges_.size(); i++) {
+      if (edges_[i]->src_ == to_delete && edges_[i]->dst_ == mutated) {
+        edges_.erase(edges_.begin() + i--);
+        break;
+      }
+    }
+    mutated->inputs_.pop_back();
+  }
 }
 
 void Circuit::MutateRemoveGate() {
@@ -579,13 +593,16 @@ void Circuit::Load(const string& contents) {
 }
 
 string Circuit::DotGraph() {
-  DetectOrphans();
+  DetectSuperfluous();
   string dotgraph = "digraph {\n";
   int out_of = pow(2, inputs_.size());
   int total_out_of = out_of * outputs_.size();
   // dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
   //   to_string(correct_count_) + " / " + to_string(out_of) + "\n" +
   //   to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
+  dotgraph += "labelloc=\"\t\"\nlabel=\"Percent: " + to_string(percent_) +
+    ", used " + to_string(gate_count_ - superfluous_count_) + " out of " +
+    to_string(gate_count_) + "\"\n";
   for (auto& v : gates_) {
     for (Gate* g : v) {
       string node_type = g->orphan_ || g->childfree_
@@ -711,10 +728,11 @@ void Circuit::FillEdges() {
 
   for (auto& l : gates_) {
     for (Gate* g : l) {
-      Gate* i1 = PickRandomSrc(g->layer_);
-      Gate* i2 = PickRandomSrc(g->layer_);
-      AddEdge(i1, g);
-      AddEdge(i2, g);
+      int count = g->ExpectedInputCount();
+      for (int i = 0; i != count; i++) {
+        Gate* i1 = PickRandomSrc(g->layer_);
+        AddEdge(i1, g);
+      }
     }
   }
 }

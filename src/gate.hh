@@ -27,8 +27,10 @@ class Gate {
   bool CanTakeInput();
   void IsConnectedToInput();
   void IsConnectedToOutput();
+  int ExpectedInputCount();
 
-  static const int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf;
+  static const int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf,
+    kFullSum, kFullCarry, kHalfSum, kHalfCarry;
   static int kLineOn, kLineOff, kLineUnknown;
   static vector<int> kGates;
   static map<int, string> kDotGraphNodes;

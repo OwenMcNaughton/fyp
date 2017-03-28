@@ -127,6 +127,7 @@ class Circuit {
   int orphan_count_;
   int superfluous_count_;
   int genome_size_;
+  float percent_;
 };
 
 #endif

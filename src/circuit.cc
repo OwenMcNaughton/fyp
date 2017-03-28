@@ -95,6 +95,7 @@ void Circuit::Evolve(const string& target) {
     cout << "\n\tBestTotal: " << circ->total_count_ << " BestExact: " <<
       circ->correct_count_ << " DecimalDiff: " << circ->decimal_diff_ <<
       "\tTOTAL_PERCENT: " << actual << endl;
+    circ->percent_ = actual;
 
     if (Util::kSaveDotGraphs) {
       SaveDotGraph(circ, "../graphs/", i + 1);
@@ -164,7 +165,6 @@ void Circuit::CircuitSort(vector<Circuit*>& children) {
   for (int j = 0; j != children.size(); j++) {
     children[j]->TestAll();
   }
-
   sort(children.begin(), children.end(), CircuitTruthSort());
 }
 

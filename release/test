@@ -1,1 +1,1 @@
-cmake .. && make && ./main t > .output
+cmake -DCMAKE_BUILD_TYPE=Debug .. && make
