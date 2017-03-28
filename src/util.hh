@@ -18,11 +18,14 @@ class Util {
     int argc, char** argv, const string& file = "../src/params");
 
   static int kGens;
+  static int kEvaluations;
   static int kChildren;
   static int kMutations;
   static int kMutatePercent;
-  // 0 for exact kMutations, 1 for rand() % kMutations, 2 for kMutatePercent.
   static int kMutationMode;
+  static int kMutationModeFixed;
+  static int kMutationModePercent;
+  static int kMutationModeRandom;
   static int kThreshold;
   static int kMessUp;
   static int kMaxGenStagnation;
@@ -72,6 +75,7 @@ class EvolutionLog {
   EvolutionLog(Circuit* skeleton);
 
   void SaveLog();
+  Circuit* DetectStagnation();
 
   int columns_;
   vector<int> rows_;

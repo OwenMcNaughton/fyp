@@ -11,10 +11,14 @@
 using namespace std;
 
 int Util::kGens = 0;
+int Util::kEvaluations = 0;
 int Util::kChildren = 0;
 int Util::kMutations = 0;
 int Util::kMutatePercent = 0;
 int Util::kMutationMode = 0;
+int Util::kMutationModeFixed = 0;
+int Util::kMutationModePercent = 1;
+int Util::kMutationModeRandom = 2;
 int Util::kThreshold = 0;
 int Util::kMessUp = 0;
 int Util::kMaxGenStagnation = 0;
@@ -164,6 +168,7 @@ void Util::InitParams(int argc, char** argv, const string& file) {
   }
 
   Util::kGens = split_map_["kGens"];
+  Util::kEvaluations = split_map_["kEvaluations"];
   Util::kChildren = split_map_["kChildren"];
   Util::kMutations = split_map_["kMutations"];
   Util::kMutatePercent = split_map_["kMutatePercent"];
@@ -230,6 +235,20 @@ void EvolutionLog::SaveLog() {
   WriteFile(s, contents);
 }
 
+Circuit* EvolutionLog::DetectStagnation() {
+  if (generations_.size() < Util::kMaxGenStagnation) {
+    return generations_.back().best_;
+  } else {
+    int idx = generations_.size() - Util::kMaxGenStagnation;
+    if (generations_[idx].best_->total_count_ >=
+        generations_.back().best_->total_count_) {
+      return generations_[0].best_;
+    } else {
+      return generations_.back().best_;
+    }
+  }
+}
+
 GenerationLog::GenerationLog() {
 
 }
@@ -247,4 +266,5 @@ GenerationLog::GenerationLog(const vector<GenerationLog>& logs, Circuit* best) {
   }
   sort(total_counts_.begin(), total_counts_.end());
   sort(correct_counts_.begin(), correct_counts_.end());
+  best_ = best;
 }

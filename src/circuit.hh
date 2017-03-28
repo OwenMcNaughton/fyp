@@ -104,9 +104,6 @@ class Circuit {
     int gen, const set<long>& hashes);
   static void CircuitSort(vector<Circuit*>& children);
   static Circuit* GetBestChild(vector<Circuit*>& children);
-  static void DetectStagnation(
-    vector<Circuit*>& historical, int* gen, int best_count,
-    int* stag_count, Circuit* circ);
   // NON UTIL }
 
   vector<Gate*> inputs_;

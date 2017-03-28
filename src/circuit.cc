@@ -39,19 +39,16 @@ void Circuit::Evolve(const string& target) {
   if (target.find("starter") == string::npos) {
     circ->MessUp(Util::kMessUp);
   } else {
-    circ->FillEdges();
   }
+  circ->FillEdges();
   if (Util::kSaveDotGraphs) {
     SaveDotGraph(circ, "../graphs/", 0);
   }
 
-  vector<Circuit*> historical;
-  historical.reserve(Util::kGens);
-  historical[0] = circ;
-  int stag_count = 0;
+  int evaluations = 0;
   ThreadPool pool(Util::kThreads);
 
-  for (int i = 1; i != Util::kGens; i++) {
+  for (int i = 1;; i++) {
     vector<future<GenerationLog>> futures;
     cout << "GEN: " << i << ", Dupes: ";
     for (int j = 0; j < Util::kThreads; j++) {
@@ -89,6 +86,8 @@ void Circuit::Evolve(const string& target) {
       elog.generations_.push_back(merged_glog);
       elog.SaveLog();
     }
+    Circuit* newcirc = elog.DetectStagnation();
+    circ = newcirc;
 
     circ->BinTruthToDec();
 
@@ -97,14 +96,16 @@ void Circuit::Evolve(const string& target) {
       circ->correct_count_ << " DecimalDiff: " << circ->decimal_diff_ <<
       "\tTOTAL_PERCENT: " << actual << endl;
 
-    // DetectStagnation(historical, &i, best_count, &stag_count, circ);
-
     if (Util::kSaveDotGraphs) {
       SaveDotGraph(circ, "../graphs/", i + 1);
     }
 
     float thresh = Util::kThreshold / 1000.0f;
     if (actual >= thresh) {
+      exit(0);
+    }
+    evaluations += Util::kThreads * Util::kChildren;
+    if (evaluations > Util::kEvaluations) {
       exit(0);
     }
   }
@@ -116,14 +117,14 @@ GenerationLog Circuit::MakeChildren(
   children.push_back(parent->Copy());
   GenerationLog glog;
   int mutation_count = 0;
-  if (Util::kMutationMode == 0) {
+  if (Util::kMutationMode == Util::kMutationModeFixed) {
     mutation_count = Util::kMutations;
-  } else {
+  } else if (Util::kMutationMode == Util::kMutationModePercent) {
     mutation_count = int((Util::kMutatePercent / 100.0) * parent->genome_size_);
   }
   for (int j = 0; j != Util::kChildren; j++) {
     Circuit* child = parent->Copy();
-    if (Util::kMutationMode == 1){
+    if (Util::kMutationMode == Util::kMutationModeRandom){
       mutation_count = (rand() % Util::kMutations) + 1;
     }
     for (int k = 0; k != mutation_count; k++) {
@@ -145,27 +146,6 @@ GenerationLog Circuit::MakeChildren(
   }
   cout << glog.dupes_ << " ";
   return glog;
-}
-
-void Circuit::DetectStagnation(
-    vector<Circuit*>& historical, int* gen, int best_count,
-    int* stag_count, Circuit* circ) {
-  historical[*gen] = circ;
-  if (*gen - Util::kMaxGenStagnation - 1 >= 0) {
-    if (historical[*gen - Util::kMaxGenStagnation]->total_count_ >= best_count) {
-      if (*stag_count > 3) {
-        circ = historical[0];
-        *gen = 0;
-        *stag_count = 0;
-        cout << "STAGNATION, reset to: 0" << endl;
-      } else {
-        circ = historical[*gen - Util::kMaxGenStagnation - 1];
-        cout << "STAGNATION, go to: " << (*gen - Util::kMaxGenStagnation - 1) << endl;
-        *gen -= Util::kMaxGenStagnation - 1;
-        *stag_count++;
-      }
-    }
-  }
 }
 
 struct CircuitTruthSort {

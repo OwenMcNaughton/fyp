@@ -37,23 +37,23 @@ Circuit* Circuit::Copy() {
 }
 
 void Circuit::Mutate() {
-  vector<function<void()>> legal_mutation_types;
-
-  if (edges_.size() > 1) {
-    legal_mutation_types.push_back(bind(&Circuit::MutateRemoveEdge, this));
-  }
-  legal_mutation_types.push_back(bind(&Circuit::MutateNewEdge, this));
-  legal_mutation_types.push_back(bind(&Circuit::MutateExistingGate, this));
-
-  // if (rand() % 2 == 0) {
-  //   MutateExistingGate();
-  // } else {
-  //   MutateRemoveEdge();
-  //   MutateNewEdge();
-  //   // MutateAnInput();
+  // vector<function<void()>> legal_mutation_types;
+  //
+  // if (edges_.size() > 1) {
+  //   legal_mutation_types.push_back(bind(&Circuit::MutateRemoveEdge, this));
   // }
+  // legal_mutation_types.push_back(bind(&Circuit::MutateNewEdge, this));
+  // legal_mutation_types.push_back(bind(&Circuit::MutateExistingGate, this));
 
-  legal_mutation_types[rand() % legal_mutation_types.size()]();
+  if (rand() % 2 == 0) {
+    MutateExistingGate();
+  } else {
+    // MutateRemoveEdge();
+    // MutateNewEdge();
+    MutateAnInput();
+  }
+
+  // legal_mutation_types[rand() % legal_mutation_types.size()]();
 }
 
 void Circuit::MutationSeries() {
@@ -705,6 +705,10 @@ void Circuit::MessUp(int factor) {
 
 // TODO fix for >2 input gates
 void Circuit::FillEdges() {
+  for (auto& i : inputs_) {
+
+  }
+
   for (auto& l : gates_) {
     for (Gate* g : l) {
       Gate* i1 = PickRandomSrc(g->layer_);

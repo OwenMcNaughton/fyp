@@ -1,8 +1,9 @@
 kGens: 100
+kEvaluations: 1000000
 kChildren: 2500
 kMutations: 10
 kMutatePercent: 5
-kMutationMode: 1
+kMutationMode: 0
 kThreshold: 900
 kMessUp: 25
 kMaxGenStagnation: 10
