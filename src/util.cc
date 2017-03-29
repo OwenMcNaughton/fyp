@@ -16,9 +16,9 @@ int Util::kChildren = 0;
 int Util::kMutations = 0;
 int Util::kMutatePercent = 0;
 int Util::kMutationMode = 0;
-int Util::kMutationModeFixed = 0;
-int Util::kMutationModePercent = 1;
-int Util::kMutationModeRandom = 2;
+  int Util::kMutationModeFixed = 0;
+  int Util::kMutationModePercent = 1;
+  int Util::kMutationModeRandom = 2;
 int Util::kThreshold = 0;
 int Util::kMessUp = 0;
 int Util::kMaxGenStagnation = 0;
@@ -31,6 +31,15 @@ int Util::kLogIter = 0;
 map<string, int> Util::split_map_ = {};
 string Util::kLogFolder = "";
 vector<int> Util::kLegalGateTypes = {};
+int Util::kBreedType = 0;
+  int Util::kBreedTypeDisable = 0;
+  int Util::kBreedTypeAbsPoly = 1;  // mix all of the top kBreedSample circs
+  int Util::kBreedTypePerPoly = 2;  // mix all of the top kBreedSample% circs
+  int Util::kBreedTypeAbsMono = 3;  // pair up each of the top kBreedSample
+  int Util::kBreedTypePerMono = 4;  // pair up each of the top kBreedSample%
+int Util::kBreedSample = 0;
+int Util::kBreedEdges = 0;
+int Util::kBreedGates = 0;
 
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
@@ -113,8 +122,10 @@ vector<int> FormatTruthDecimal(
   return decimal_truth;
 }
 
-void SaveDotGraph(Circuit* circ, string folder, int id) {
+void SaveDotGraph(Circuit* circ, string folder, int id, EvolutionLog elog) {
   circ->TestAll();
+  float actual = circ->total_count_ / float(elog.goal_total_count_);
+  circ->percent_ = actual;
   char s[50];
   sprintf(s, "%05d.gv", id);
   mkdir(folder.c_str(), ACCESSPERMS);
@@ -123,8 +134,10 @@ void SaveDotGraph(Circuit* circ, string folder, int id) {
   // system(("dot " + filename).c_str());
 }
 
-void SaveDotGraph(Circuit* circ, string folder, string unique) {
+void SaveDotGraph(Circuit* circ, string folder, string unique, EvolutionLog elog) {
   circ->TestAll();
+  float actual = circ->total_count_ / float(elog.goal_total_count_);
+  circ->percent_ = actual;
   mkdir(folder.c_str(), ACCESSPERMS);
   string filename = folder + unique + ".gv";
   WriteFile(filename, circ->DotGraph());
@@ -182,6 +195,10 @@ void Util::InitParams(int argc, char** argv, const string& file) {
   Util::kPruneOrphans = split_map_["kPruneOrphans"];
   Util::kLog = split_map_["kLog"];
   Util::kLogIter = split_map_["kLogIter"];
+  Util::kBreedType = split_map_["kBreedType"];
+  Util::kBreedSample = split_map_["kBreedSample"] / Util::kThreads;
+  Util::kBreedEdges = split_map_["kBreedEdges"];
+  Util::kBreedGates = split_map_["kBreedGates"];
 }
 
 EvolutionLog::EvolutionLog(Circuit* skeleton) {
@@ -231,7 +248,6 @@ void EvolutionLog::SaveLog() {
   //   contents += "\n";
   // }
 
-  cout << s << endl;
   WriteFile(s, contents);
 }
 
@@ -254,6 +270,7 @@ GenerationLog::GenerationLog() {
 }
 
 GenerationLog::GenerationLog(const vector<GenerationLog>& logs, Circuit* best) {
+  best_ = logs[0].best_;
   for (const auto& glog : logs) {
     correct_counts_.reserve(
       correct_counts_.size() + glog.correct_counts_.size());
@@ -263,6 +280,10 @@ GenerationLog::GenerationLog(const vector<GenerationLog>& logs, Circuit* best) {
     total_counts_.insert(total_counts_.end(),
       glog.total_counts_.begin(), glog.total_counts_.end());
     dupes_ += glog.dupes_;
+    bests_.insert(bests_.end(), glog.bests_.begin(), glog.bests_.end());
+    if (glog.best_->total_count_ >= best_->total_count_) {
+      best_ = glog.best_;
+    }
   }
   sort(total_counts_.begin(), total_counts_.end());
   sort(correct_counts_.begin(), correct_counts_.end());

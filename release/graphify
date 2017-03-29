@@ -1,0 +1,4 @@
+for file in $(find . -name '*.gv');
+do
+  dot -Tsvg -o"$file".svg "$file"
+done

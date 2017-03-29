@@ -13,18 +13,7 @@ using namespace std;
 Circuit* Circuit::Copy() {
   Circuit* c = new Circuit();
 
-  for (Gate* g : inputs_) {
-    c->AddInput(new Gate(g->type_, g->name_, -1));
-  }
-  for (auto& layer : gates_) {
-    c->AddLayer();
-    for (Gate* g : layer) {
-      c->AddGate(new Gate(g->type_, g->name_, g->layer_));
-    }
-  }
-  for (Gate* g : outputs_) {
-    c->AddOutput(new Gate(g->type_, g->name_, gates_.size()));
-  }
+  CopyGates(this, c);
 
   for (auto& edge : edges_) {
     c->AddEdge(edge->src_->name_, edge->dst_->name_);
@@ -35,6 +24,83 @@ Circuit* Circuit::Copy() {
 
   return c;
 }
+
+void Circuit::CopyGates(Circuit* src, Circuit* dst) {
+  for (Gate* g : src->inputs_) {
+    dst->AddInput(new Gate(g->type_, g->name_, -1));
+  }
+  for (auto& layer : src->gates_) {
+    dst->AddLayer();
+    for (Gate* g : layer) {
+      dst->AddGate(new Gate(g->type_, g->name_, g->layer_));
+    }
+  }
+  for (Gate* g : src->outputs_) {
+    dst->AddOutput(new Gate(g->type_, g->name_, src->gates_.size()));
+  }
+}
+
+Circuit* Circuit::Breed(vector<Circuit*>& parents) {
+  Circuit* c = new Circuit();
+
+  CopyGates(parents[0], c);
+
+  int layer_idx = 0;
+  int parent_idx = Util::kBreedGates ? rand() % parents.size() : 0;
+  for (auto& layer : c->gates_) {
+    int row_idx = 0;
+    for (Gate* g : layer) {
+      g->inputs_.clear();
+      if (Util::kBreedGates) {
+        g->type_ = parents[parent_idx]->gates_[layer_idx][row_idx]->type_;
+      }
+      parent_idx++;
+      if (parent_idx == parents.size()) {
+        parent_idx = 0;
+      }
+      row_idx++;
+    }
+    layer_idx++;
+  }
+
+  for (auto& edge : parents[0]->edges_) {
+    c->AddEdge(edge->src_->name_, edge->dst_->name_);
+  }
+
+  layer_idx = 0;
+  parent_idx = rand() % parents.size();
+  for (auto& layer : c->gates_) {
+    int row_idx = 0;
+    for (Gate* g : layer) {
+      c->FixMutatedGate(g);
+      if (Util::kBreedEdges) {
+        Gate* src = parents[parent_idx]->gates_[layer_idx][row_idx];
+        for (int idx = 0; idx != src->inputs_.size(); idx++) {
+          Gate* new_input = src->inputs_[idx];
+          for (int i = 0; i < c->edges_.size(); i++) {
+            if (c->edges_[i]->src_ == g->inputs_[idx] && c->edges_[i]->dst_ == g) {
+              c->edges_.erase(c->edges_.begin() + i--);
+            }
+          }
+          c->edges_.push_back(new Edge(new_input, g, new_input->layer_, g->layer_));
+          g->inputs_[idx] = new_input;
+        }
+        parent_idx++;
+        if (parent_idx == parents.size()) {
+          parent_idx = 0;
+        }
+        row_idx++;
+      }
+    }
+    layer_idx++;
+  }
+
+  c->gate_count_ = parents[0]->gate_count_;
+  c->genome_size_ = parents[0]->genome_size_;
+
+  return c;
+}
+
 
 void Circuit::Mutate() {
   // vector<function<void()>> legal_mutation_types;
@@ -95,6 +161,10 @@ void Circuit::MutateExistingGate() {
   }
   Gate* mutated = gates_[layer][rand() % gates_[layer].size()];
   mutated->Mutate();
+  FixMutatedGate(mutated);
+}
+
+void Circuit::FixMutatedGate(Gate* mutated) {
   if (mutated->ExpectedInputCount() > mutated->inputs_.size()) {
     Gate* i1 = PickRandomSrc(mutated->layer_);
     AddEdge(i1, mutated);
@@ -489,7 +559,9 @@ void Circuit::AddEdge(const string& src, const string& dst) {
     cout << "\t!! " << src << " -> [" << dst << "] not found" << endl;
     exit(1);
   }
-  AddEdge(src_gate, dst_gate);
+  if (dst_gate->CanTakeInput()) {
+    AddEdge(src_gate, dst_gate);
+  }
 }
 
 void Circuit::AddEdge(Gate* src, Gate* dst) {
@@ -608,6 +680,7 @@ string Circuit::DotGraph() {
       string node_type = g->orphan_ || g->childfree_
         ? Gate::kDotGraphOrphanNode
         : Gate::kDotGraphNodes[g->type_];
+      // string node_type = Gate::kDotGraphNodes[g->type_];
       dotgraph += "\t" + g->name_ + " " + node_type + "\n";
     }
   }
@@ -730,6 +803,9 @@ void Circuit::FillEdges() {
     for (Gate* g : l) {
       int count = g->ExpectedInputCount();
       for (int i = 0; i != count; i++) {
+        if (!g->CanTakeInput()) {
+          break;
+        }
         Gate* i1 = PickRandomSrc(g->layer_);
         AddEdge(i1, g);
       }

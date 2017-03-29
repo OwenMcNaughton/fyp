@@ -80,10 +80,14 @@ class Circuit {
   void MutateExistingEdge();
   void MutateRemoveEdge();
   void MutateAnInput();
+  void FixMutatedGate(Gate* g);
 
   void MessUp(int factor);
   void FillEdges();
   void BinTruthToDec();
+
+  static void CopyGates(Circuit* src, Circuit* dst);
+  static Circuit* Breed(vector<Circuit*>& parents);
 
   static int GetDanglingCount(Circuit* circ);
   long Hash();
@@ -104,6 +108,7 @@ class Circuit {
     int gen, const set<long>& hashes);
   static void CircuitSort(vector<Circuit*>& children);
   static Circuit* GetBestChild(vector<Circuit*>& children);
+  static vector<Circuit*> GetBestChildren(vector<Circuit*>& children);
   // NON UTIL }
 
   vector<Gate*> inputs_;

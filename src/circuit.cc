@@ -30,19 +30,17 @@ Circuit::Circuit(const string& contents) {
 
 void Circuit::Evolve(const string& target) {
   Circuit* circ = new Circuit(ReadFile("../circs/" + target + ".circ"));
+  vector<Circuit*> circs;
 
   EvolutionLog elog(circ);
 
   if (Util::kSaveDotGraphs) {
-    SaveDotGraph(circ, "../graphs/", "original");
+    SaveDotGraph(circ, "../graphs/", "original", elog);
   }
-  if (target.find("starter") == string::npos) {
-    circ->MessUp(Util::kMessUp);
-  } else {
-  }
+  circ->MessUp(Util::kMessUp);
   circ->FillEdges();
   if (Util::kSaveDotGraphs) {
-    SaveDotGraph(circ, "../graphs/", 0);
+    SaveDotGraph(circ, "../graphs/", 0, elog);
   }
 
   int evaluations = 0;
@@ -51,6 +49,12 @@ void Circuit::Evolve(const string& target) {
   for (int i = 1;; i++) {
     vector<future<GenerationLog>> futures;
     cout << "GEN: " << i << ", Dupes: ";
+    if (i != 1 && Util::kBreedType != Util::kBreedTypeDisable) {
+      if (Util::kBreedType == Util::kBreedTypeAbsPoly ||
+          Util::kBreedType == Util::kBreedTypePerPoly) {
+        circ = Breed(circs);
+      }
+    }
     for (int j = 0; j < Util::kThreads; j++) {
       Circuit* circ2 = circ->Copy();
       auto fut = pool.enqueue([circ2, i, j, elog]() {
@@ -63,19 +67,24 @@ void Circuit::Evolve(const string& target) {
             glog.total_counts_.push_back(c->total_count_);
           }
         }
-        glog.best_ = Circuit::GetBestChild(children);
+        if (Util::kBreedType == Util::kBreedTypeDisable) {
+          glog.best_ = Circuit::GetBestChild(children);
+        } else {
+          glog.bests_ = Circuit::GetBestChildren(children);
+          glog.best_ = glog.bests_[0];
+        }
         return glog;
       });
       futures.push_back(move(fut));
     }
 
     int best_count = circ->total_count_;
-    int f = 0;
     vector<GenerationLog> glogs;
     for (int j = 0; j < Util::kThreads; j++) {
       auto glog = futures[j].get();
       elog.hashes_.insert(glog.hashes_.begin(), glog.hashes_.end());
-      if (glog.best_ && glog.best_->total_count_ >= best_count) {
+      if (glog.best_ && glog.best_->total_count_ >= best_count ||
+          Util::kBreedType != 0) {
         circ = glog.best_;
         best_count = glog.best_->total_count_;
       }
@@ -88,6 +97,9 @@ void Circuit::Evolve(const string& target) {
     }
     Circuit* newcirc = elog.DetectStagnation();
     circ = newcirc;
+    if (Util::kBreedType != Util::kBreedTypeDisable) {
+      circs = elog.generations_.back().bests_;
+    }
 
     circ->BinTruthToDec();
 
@@ -98,7 +110,7 @@ void Circuit::Evolve(const string& target) {
     circ->percent_ = actual;
 
     if (Util::kSaveDotGraphs) {
-      SaveDotGraph(circ, "../graphs/", i + 1);
+      SaveDotGraph(circ, "../graphs/", i + 1, elog);
     }
 
     float thresh = Util::kThreshold / 1000.0f;
@@ -174,6 +186,20 @@ Circuit* Circuit::GetBestChild(vector<Circuit*>& children) {
   }
   children.erase(children.begin() + 1, children.end());
   return children[0];
+}
+
+vector<Circuit*> Circuit::GetBestChildren(vector<Circuit*>& children) {
+  int bt = Util::kBreedType;
+  int n = bt == Util::kBreedTypeAbsMono || bt == Util::kBreedTypeAbsPoly
+    ? Util::kBreedSample
+    : children.size() * float(Util::kBreedSample / float(children.size()));
+  n = n % 2 == 0 ? n : n - 1;
+  n = n == 0 ? 1 : n;
+  for (int i = n; i != children.size(); i++) {
+    delete children[i];
+  }
+  children.erase(children.begin() + 1, children.end());
+  return children;
 }
 
 void Circuit::AddInput(Gate* g) {

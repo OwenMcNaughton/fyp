@@ -196,6 +196,7 @@ int Gate::Compute() {
         }
       }
       stored_answer_ = kLineOff;
+      return stored_answer_;
     }
   }
   if (type_ == kOrr) {
@@ -213,6 +214,7 @@ int Gate::Compute() {
         }
       }
       stored_answer_ = kLineOff;
+      return stored_answer_;
     }
   }
   if (type_ == kXor) {
