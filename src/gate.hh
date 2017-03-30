@@ -10,7 +10,7 @@ using namespace std;
 
 class Gate {
  public:
-  Gate(int type, string name, int layer);
+  Gate(int type, string name, int layer, bool mutateable = true);
   ~Gate();
   Gate* Copy(map<string, Gate*>& table);
 
@@ -46,6 +46,7 @@ class Gate {
   int stored_answer_;
   bool orphan_;
   bool childfree_;
+  bool mutateable_;
 };
 
 #endif

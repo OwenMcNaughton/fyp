@@ -609,8 +609,15 @@ void Circuit::Load(const string& contents) {
         for (auto& c : rc) {
           vector<Gate*> layer;
           gates_.push_back(layer);
-          for (int j = 0; j != atoi(c.c_str()); j++) {
-            Gate* g = new Gate(rand() % 4, to_string(rand()), i);
+          vector<string> wat = Split(c, ";");
+          int type = rand() % 4;
+          bool mutateable = true;
+          if (wat.size() > 1) {
+            type = atoi(wat[1].c_str());
+            mutateable = false;
+          }
+          for (int j = 0; j != atoi(wat[0].c_str()); j++) {
+            Gate* g = new Gate(type, to_string(rand()), i, mutateable);
             AddGate(g);
           }
           i++;

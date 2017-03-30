@@ -89,8 +89,8 @@ map<int, string> Gate::kDotGraphNodes = {
 
 string Gate::kDotGraphOrphanNode = "[shape=circle,color=black,style=dashed,label=\"\"]";
 
-Gate::Gate(int type, string name, int layer)
-    : type_(type), name_(name), layer_(layer),
+Gate::Gate(int type, string name, int layer, bool mutateable)
+    : type_(type), name_(name), layer_(layer), mutateable_(mutateable),
       computed_(false), orphan_(false), childfree_(false) {
 
 }
@@ -109,7 +109,9 @@ Gate* Gate::Copy(map<string, Gate*>& table) {
 }
 
 void Gate::Mutate() {
-  type_ = Util::kLegalGateTypes[rand() % Util::kLegalGateTypes.size()];
+  if (mutateable_) {
+    type_ = Util::kLegalGateTypes[rand() % Util::kLegalGateTypes.size()];
+  }
 }
 
 void Gate::AddInput(Gate* in) {
