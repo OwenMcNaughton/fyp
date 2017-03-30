@@ -1,9 +1,9 @@
 kGens: 100
 kEvaluations: 1000000
-kChildren: 600
-kMutations: 10
+kChildren: 100
+kMutations: 4
 kMutatePercent: 5
-kMutationMode: 0
+kMutationMode: 2
 kThreshold: 900
 kMessUp: 0
 kMaxGenStagnation: 10
@@ -14,7 +14,7 @@ kPruneOrphans: 1
 kLog: 1
 kLogIter: 0
 kLegalGateTypes: 1,2,3
-kBreedType: 1
+kBreedType: 0
 kBreedSample: 4
 kBreedEdges: 1
 kBreedGates: 1
