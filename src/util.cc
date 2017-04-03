@@ -40,6 +40,8 @@ int Util::kBreedType = 0;
 int Util::kBreedSample = 0;
 int Util::kBreedEdges = 0;
 int Util::kBreedGates = 0;
+int Util::kBasicLog = 0;
+int Util::kTruthWeight = 0;
 
 vector<string> Split(const string& s, string delimiter) {
   vector<string> v;
@@ -199,6 +201,8 @@ void Util::InitParams(int argc, char** argv, const string& file) {
   Util::kBreedSample = split_map_["kBreedSample"] / Util::kThreads;
   Util::kBreedEdges = split_map_["kBreedEdges"];
   Util::kBreedGates = split_map_["kBreedGates"];
+  Util::kBasicLog = split_map_["kBasicLog"];
+  Util::kTruthWeight = split_map_["kTruthWeight"];
 }
 
 EvolutionLog::EvolutionLog(Circuit* skeleton) {
@@ -208,10 +212,58 @@ EvolutionLog::EvolutionLog(Circuit* skeleton) {
   }
   goal_correct_count_ = pow(2, skeleton->inputs_.size());
   goal_total_count_ = goal_correct_count_ * skeleton->outputs_.size();
+  goal_total_weighted_count_ = goal_correct_count_ * pow(2, skeleton->inputs_.size());
 }
 
 void EvolutionLog::SaveLog() {
-  char s[50];
+  char s[500];
+  sprintf(s, "../logs/%s/elog%05d", Util::kLogFolder.c_str(), Util::kLogIter);
+  cout << s << endl;
+
+  string contents = "";
+  for (const auto& param : Util::split_map_) {
+    contents += param.first + ": " + to_string(param.second) + "\n";
+  }
+  contents += "columns: " + to_string(columns_) + "\n";
+  contents += "rows: ";
+  for (int i = 0; i < rows_.size(); i++) {
+    contents += to_string(rows_[i]);
+    contents += i == rows_.size() - 1 ? "\n" : ",";
+  }
+  contents += "goal_correct_count: " + to_string(goal_correct_count_) + "\n";
+  contents += "goal_total_count: " + to_string(goal_total_count_) + "\n";
+  contents += "goal_total_weighted_count: " + to_string(goal_total_weighted_count_) + "\n";
+  contents += "~\n";
+
+  generations_.back().best_->DetectSuperfluous();
+  int gates_used = generations_.back().best_->gate_count_ -
+    generations_.back().best_->superfluous_count_;
+  contents += "gates_used: " + to_string(gates_used) + "\n";
+  contents += "total_count: " +
+    to_string(generations_.back().best_->total_count_) + "\n";
+  contents += "total_weighted_count: " +
+    to_string(generations_.back().best_->total_weighted_count_) + "\n";
+  contents += "percent: " + to_string(generations_.back().best_->total_count_ /
+    float(goal_total_count_)) + "\n";
+  contents += "weighted_percent: " + to_string(generations_.back().best_->total_weighted_count_ /
+    float(goal_total_weighted_count_)) + "\n";
+
+  // for (const auto glog : generations_) {
+  //   for (int i : glog.correct_counts_) {
+  //     contents += to_string(i) + ",";
+  //   }
+  //   contents += ";";
+  //   for (int i : glog.total_counts_) {
+  //     contents += to_string(i) + ",";
+  //   }
+  //   contents += "\n";
+  // }
+
+  WriteFile(s, contents);
+}
+
+void EvolutionLog::SaveBasicLog(int evaluations) {
+  char s[500];
   sprintf(s, "../logs/%s/elog%05d", Util::kLogFolder.c_str(), Util::kLogIter);
 
   string contents = "";
@@ -226,6 +278,7 @@ void EvolutionLog::SaveLog() {
   }
   contents += "goal_correct_count: " + to_string(goal_correct_count_) + "\n";
   contents += "goal_total_count: " + to_string(goal_total_count_) + "\n";
+  contents += "goal_total_weighted_count: " + to_string(goal_total_weighted_count_) + "\n";
   contents += "~\n";
 
   generations_.back().best_->DetectSuperfluous();
@@ -234,8 +287,13 @@ void EvolutionLog::SaveLog() {
   contents += "gates_used: " + to_string(gates_used) + "\n";
   contents += "total_count: " +
     to_string(generations_.back().best_->total_count_) + "\n";
+  contents += "total_weighted_count: " +
+    to_string(generations_.back().best_->total_weighted_count_) + "\n";
   contents += "percent: " + to_string(generations_.back().best_->total_count_ /
     float(goal_total_count_)) + "\n";
+  contents += "weighted_percent: " + to_string(generations_.back().best_->total_weighted_count_ /
+    float(goal_total_weighted_count_)) + "\n";
+  contents += "evaluations: " + to_string(evaluations) + "\n";
 
   // for (const auto glog : generations_) {
   //   for (int i : glog.correct_counts_) {

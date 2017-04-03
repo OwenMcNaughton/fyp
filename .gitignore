@@ -8,3 +8,4 @@ release/main
 release/libCircLib.a
 release/.output
 release/callgrind.*
+release/.tmp

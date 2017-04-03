@@ -498,6 +498,7 @@ void Circuit::AssignBestPinnings() {
 void Circuit::TestAll() {
   correct_count_ = 0;
   total_count_ = 0;
+  total_weighted_count_ = 0;
   if (Util::kPruneOrphans) {
     DetectOrphans();
   }
@@ -663,8 +664,10 @@ void Circuit::Load(const string& contents) {
   int input_size = atoi(truth[1].c_str());
   vector<vector<string>> truth_table;
   for (int i = 2; i < truth.size() - 1; i++) {
-    vector<string> row = Split(truth[i], ",");
-    truth_table.push_back(row);
+    if (truth[i].size() > 2) {
+      vector<string> row = Split(truth[i], ",");
+      truth_table.push_back(row);
+    }
   }
   Circuit::kTruthTable = FormatTruthTable(truth_table, input_size);
   Circuit::kTruthDecimal = FormatTruthDecimal(
@@ -831,13 +834,22 @@ Gate* Circuit::PickRandomSrc(int end_before) {
 
 void Circuit::BinTruthToDec() {
   truth_decimal_.clear();
+  int i = 0;
+  total_weighted_count_ = 0;
   for (auto& pair : ephemeral_truth_) {
     int output_val = 0;
+    int significance = 1;
     for (Gate* g : outputs_) {
+      if (pair.second[g->name_] == kTruthTable[pair.first][g->name_]) {
+        total_weighted_count_ += significance;
+      }
+      significance *= 2;
       output_val = output_val << 1;
       output_val += pair.second[g->name_];
     }
+    total_weighted_count_++;
     truth_decimal_.push_back(output_val);
+    i++;
   }
 
   decimal_diff_ = 0;

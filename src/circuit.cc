@@ -48,7 +48,9 @@ void Circuit::Evolve(const string& target) {
 
   for (int i = 1;; i++) {
     vector<future<GenerationLog>> futures;
-    cout << "GEN: " << i << ", Dupes: ";
+    if (Util::kBasicLog) {
+      cout << "GEN: " << i << ", Dupes: ";
+    }
     if (i != 1 && Util::kBreedType != Util::kBreedTypeDisable) {
       if (Util::kBreedType == Util::kBreedTypeAbsPoly ||
           Util::kBreedType == Util::kBreedTypePerPoly) {
@@ -90,6 +92,11 @@ void Circuit::Evolve(const string& target) {
       }
       glogs.push_back(glog);
     }
+    circ->BinTruthToDec();
+    float actual = circ->total_count_ / float(elog.goal_total_count_);
+    float weighted_actual = circ->total_weighted_count_ / float(elog.goal_total_weighted_count_);
+    circ->percent_ = actual;
+    circ->weighted_percent_ = weighted_actual;
     if (Util::kLog){
       GenerationLog merged_glog(glogs, circ);
       elog.generations_.push_back(merged_glog);
@@ -101,24 +108,26 @@ void Circuit::Evolve(const string& target) {
       circs = elog.generations_.back().bests_;
     }
 
-    circ->BinTruthToDec();
-
-    float actual = circ->total_count_ / float(elog.goal_total_count_);
-    cout << "\n\tBestTotal: " << circ->total_count_ << " BestExact: " <<
-      circ->correct_count_ << " DecimalDiff: " << circ->decimal_diff_ <<
-      "\tTOTAL_PERCENT: " << actual << endl;
-    circ->percent_ = actual;
+    if (Util::kBasicLog) {
+      cout << "\n\tBestTotal: " << circ->total_count_ << " BestExact: " <<
+        circ->correct_count_ << " WeightedCount: " << circ->total_weighted_count_ <<
+        "\tTOTAL_PERCENT: " << actual << "  WEIGHTED_PERCENT: " << weighted_actual << endl;
+    }
 
     if (Util::kSaveDotGraphs) {
       SaveDotGraph(circ, "../graphs/", i + 1, elog);
     }
 
     float thresh = Util::kThreshold / 1000.0f;
+    evaluations += Util::kThreads * Util::kChildren;
     if (actual >= thresh) {
+      cout << i << ": " << evaluations << endl;
+      elog.SaveBasicLog(evaluations);
       exit(0);
     }
-    evaluations += Util::kThreads * Util::kChildren;
     if (evaluations > Util::kEvaluations) {
+      cout << i << ": fail" << endl;
+      elog.SaveBasicLog(evaluations);
       exit(0);
     }
   }
@@ -157,7 +166,9 @@ GenerationLog Circuit::MakeChildren(
       j--;
     }
   }
-  cout << glog.dupes_ << " ";
+  if (Util::kBasicLog) {
+    cout << glog.dupes_ << " ";
+  }
   return glog;
 }
 
@@ -173,11 +184,24 @@ struct CircuitDecimalDiffSort {
   }
 };
 
+struct CircuitWeightedTruthSort {
+  inline bool operator() (Circuit* circ1, Circuit* circ2) {
+    return circ1->total_weighted_count_ > circ2->total_weighted_count_;
+  }
+};
+
 void Circuit::CircuitSort(vector<Circuit*>& children) {
   for (int j = 0; j != children.size(); j++) {
     children[j]->TestAll();
+    if (Util::kTruthWeight) {
+      children[j]->BinTruthToDec();
+    }
   }
-  sort(children.begin(), children.end(), CircuitTruthSort());
+  if (Util::kTruthWeight) {
+    sort(children.begin(), children.end(), CircuitWeightedTruthSort());
+  } else {
+    sort(children.begin(), children.end(), CircuitTruthSort());
+  }
 }
 
 Circuit* Circuit::GetBestChild(vector<Circuit*>& children) {

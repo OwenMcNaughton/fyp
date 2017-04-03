@@ -125,6 +125,7 @@ class Circuit {
 
   int correct_count_;
   int total_count_;
+  int total_weighted_count_;
   int superfluous_score_;
   int decimal_diff_;
   bool bad_ = false;
@@ -133,6 +134,7 @@ class Circuit {
   int superfluous_count_;
   int genome_size_;
   float percent_;
+  float weighted_percent_;
 };
 
 #endif

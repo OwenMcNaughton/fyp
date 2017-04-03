@@ -47,6 +47,8 @@ class Util {
   static int kBreedSample;
   static int kBreedEdges;
   static int kBreedGates;
+  static int kBasicLog;
+  static int kTruthWeight;
 
   static map<string, int> split_map_;
 };
@@ -86,6 +88,7 @@ class EvolutionLog {
   EvolutionLog(Circuit* skeleton);
 
   void SaveLog();
+  void SaveBasicLog(int evaluations);
   Circuit* DetectStagnation();
 
   int columns_;
@@ -95,6 +98,7 @@ class EvolutionLog {
 
   int goal_correct_count_;
   int goal_total_count_;
+  int goal_total_weighted_count_;
   vector<GenerationLog> generations_;
 };
 
