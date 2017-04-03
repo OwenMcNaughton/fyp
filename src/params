@@ -1,7 +1,7 @@
 kGens: 100
 kEvaluations: 200000
 kChildren: 500
-kMutations: 10
+kMutations: 16
 kMutatePercent: 5
 kMutationMode: 2
 kThreshold: 900
@@ -14,7 +14,7 @@ kPruneOrphans: 1
 kLog: 1
 kLogIter: 0
 kLegalGateTypes: 1,2,3
-kBreedType: 1
+kBreedType: 0
 kBreedSample: 128
 kBreedEdges: 1
 kBreedGates: 1

@@ -597,7 +597,9 @@ void Circuit::Load(const string& contents) {
         vector<Gate*> layer;
         gates_.push_back(layer);
         for (int j = 0; j != atoi(cr[1].c_str()); j++) {
-          Gate* g = new Gate(rand() % 4, to_string(rand()), i);
+          Gate* g = new Gate(
+            Util::kLegalGateTypes[rand() % Util::kLegalGateTypes.size()],
+            to_string(rand()), i);
           AddGate(g);
         }
       }
@@ -618,7 +620,9 @@ void Circuit::Load(const string& contents) {
             mutateable = false;
           }
           for (int j = 0; j != atoi(wat[0].c_str()); j++) {
-            Gate* g = new Gate(type, to_string(rand()), i, mutateable);
+            Gate* g = new Gate(
+              Util::kLegalGateTypes[rand() % Util::kLegalGateTypes.size()],
+              to_string(rand()), i, mutateable);
             AddGate(g);
           }
           i++;
