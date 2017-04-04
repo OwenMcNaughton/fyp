@@ -103,9 +103,9 @@ def outerCartIter():
     j += 1
     for i in range(int(iterations)):
       try:
-        p = Popen(['./main', circfile, str(i), str(threshold), folder])
+        p = call(['./main', circfile, str(i), str(threshold), folder])
         print("./main " + circfile + " " + str(i) + " " + str(threshold) + " " + folder)
-        output, err = p.communicate()
+        # output, err = p.communicate()
       except OSError:
         pass
 
