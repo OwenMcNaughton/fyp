@@ -100,6 +100,7 @@ class Circuit {
 
   // { NON UTIL
   static void Evolve(const string& target);
+  static void ParallelEvolve(const string& target);
   static GenerationLog MakeChildren(
     Circuit* parent, vector<Circuit*>& children,
     int gen, const EvolutionLog& elog);

@@ -1,6 +1,5 @@
 #include "circuit.hh"
 #include <string.h>
-#include "test.cc"
 #include "util.hh"
 
 using namespace std;

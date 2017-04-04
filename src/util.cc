@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -203,6 +204,11 @@ void Util::InitParams(int argc, char** argv, const string& file) {
   Util::kBreedGates = split_map_["kBreedGates"];
   Util::kBasicLog = split_map_["kBasicLog"];
   Util::kTruthWeight = split_map_["kTruthWeight"];
+  int threads = sysconf(_SC_NPROCESSORS_ONLN);
+  if (threads > 50) {
+    Util::kThreads = 50;
+  }
+  Util::kChildren = Util::kChildren / Util::kThreads;
 }
 
 EvolutionLog::EvolutionLog(Circuit* skeleton) {
@@ -218,7 +224,6 @@ EvolutionLog::EvolutionLog(Circuit* skeleton) {
 void EvolutionLog::SaveLog() {
   char s[500];
   sprintf(s, "../logs/%s/elog%05d", Util::kLogFolder.c_str(), Util::kLogIter);
-  cout << s << endl;
 
   string contents = "";
   for (const auto& param : Util::split_map_) {
@@ -305,6 +310,61 @@ void EvolutionLog::SaveBasicLog(int evaluations) {
   //   }
   //   contents += "\n";
   // }
+
+  WriteFile(s, contents);
+}
+
+void EvolutionLog::SaveFullLog(int evaluations, const string& name) {
+  char s[500];
+  sprintf(s, "../logs/%s/%s", Util::kLogFolder.c_str(), name.c_str());
+
+  string contents = "";
+  for (const auto& param : Util::split_map_) {
+    contents += param.first + ": " + to_string(param.second) + "\n";
+  }
+  contents += "columns: " + to_string(columns_) + "\n";
+  contents += "rows: ";
+  for (int i = 0; i < rows_.size(); i++) {
+    contents += to_string(rows_[i]);
+    contents += i == rows_.size() - 1 ? "\n" : ",";
+  }
+  contents += "goal_correct_count: " + to_string(goal_correct_count_) + "\n";
+  contents += "goal_total_count: " + to_string(goal_total_count_) + "\n";
+  contents += "goal_total_weighted_count: " + to_string(goal_total_weighted_count_) + "\n";
+  contents += "~\n";
+
+  generations_.back().best_->DetectSuperfluous();
+  int gates_used = generations_.back().best_->gate_count_ -
+    generations_.back().best_->superfluous_count_;
+  contents += "gates_used: " + to_string(gates_used) + "\n";
+  contents += "total_count: " +
+    to_string(generations_.back().best_->total_count_) + "\n";
+  contents += "total_weighted_count: " +
+    to_string(generations_.back().best_->total_weighted_count_) + "\n";
+  contents += "percent: " + to_string(generations_.back().best_->total_count_ /
+    float(goal_total_count_)) + "\n";
+  contents += "weighted_percent: " + to_string(generations_.back().best_->total_weighted_count_ /
+    float(goal_total_weighted_count_)) + "\n";
+  contents += "evaluations: " + to_string(evaluations) + "\n";
+
+  contents += "~\n";
+
+  for (int i : total_history_) {
+    contents += to_string(i) + ",";
+  }
+  contents += "\n";
+  for (int i : weighted_total_history_) {
+    contents += to_string(i) + ",";
+  }
+  contents += "\n";
+  for (float i : percent_history_) {
+    contents += to_string(i) + ",";
+  }
+  contents += "\n";
+  for (float i : weighted_percent_history_) {
+    contents += to_string(i) + ",";
+  }
+  contents += "\n";
 
   WriteFile(s, contents);
 }

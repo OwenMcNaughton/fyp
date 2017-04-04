@@ -89,6 +89,7 @@ class EvolutionLog {
 
   void SaveLog();
   void SaveBasicLog(int evaluations);
+  void SaveFullLog(int evaluations, const string& name);
   Circuit* DetectStagnation();
 
   int columns_;
@@ -100,6 +101,10 @@ class EvolutionLog {
   int goal_total_count_;
   int goal_total_weighted_count_;
   vector<GenerationLog> generations_;
+  vector<int> total_history_;
+  vector<int> weighted_total_history_;
+  vector<float> percent_history_;
+  vector<float> weighted_percent_history_;
 };
 
 

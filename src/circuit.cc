@@ -8,6 +8,7 @@
 #include <set>
 #include <stdexcept>
 #include "threadpool.hh"
+#include <thread>
 #include "util.hh"
 
 using namespace std;
@@ -97,15 +98,20 @@ void Circuit::Evolve(const string& target) {
     float weighted_actual = circ->total_weighted_count_ / float(elog.goal_total_weighted_count_);
     circ->percent_ = actual;
     circ->weighted_percent_ = weighted_actual;
+    evaluations += Util::kChildren * Util::kThreads;
     if (Util::kLog){
       GenerationLog merged_glog(glogs, circ);
       elog.generations_.push_back(merged_glog);
-      elog.SaveLog();
+      elog.SaveFullLog(evaluations, "final");
     }
     Circuit* newcirc = elog.DetectStagnation();
     circ = newcirc;
     if (Util::kBreedType != Util::kBreedTypeDisable) {
       circs = elog.generations_.back().bests_;
+      elog.total_history_.push_back(circ->total_count_);
+      elog.weighted_total_history_.push_back(circ->total_weighted_count_);
+      elog.percent_history_.push_back(circ->percent_);
+      elog.weighted_percent_history_.push_back(circ->weighted_percent_);
     }
 
     if (Util::kBasicLog) {
@@ -118,17 +124,20 @@ void Circuit::Evolve(const string& target) {
       SaveDotGraph(circ, "../graphs/", i + 1, elog);
     }
 
+    if (elog.generations_.size() > 10) {
+      elog.generations_.erase(elog.generations_.begin(), elog.generations_.begin() + 8);
+    }
+
     float thresh = Util::kThreshold / 1000.0f;
-    evaluations += Util::kThreads * Util::kChildren;
     if (actual >= thresh) {
-      cout << i << ": " << evaluations << endl;
-      elog.SaveBasicLog(evaluations);
-      exit(0);
+      cout << "Got it in gen " << i << " after " << evaluations << " evals" << endl;
+      elog.SaveFullLog(evaluations, "final");
+      return;
     }
     if (evaluations > Util::kEvaluations) {
-      cout << i << ": fail" << endl;
-      elog.SaveBasicLog(evaluations);
-      exit(0);
+      cout << "Failed after " << i << " gens" << endl;
+      elog.SaveFullLog(evaluations, "final");
+      return;
     }
   }
 }

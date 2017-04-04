@@ -1,0 +1,2 @@
+#!/bin/sh
+g++ -std=c++11 -c ../src/*.cc && g++ -o main *.o -lpthread && rm *.o
