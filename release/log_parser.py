@@ -62,29 +62,36 @@ def parse(folder):
   print('Average Evals of All circuits: ' + str(total_evals / total))
   print('Average Correctness: ' + str(total_percent / total))
   print('Gates used: ' + str(gates_used))
+  print('total_count_hist: ' + contents[-5])
+  print('weighted_total_count_hist: ' + contents[-4])
+  print('percent_hist: ' + contents[-3])
+  print('weighted_percent_hist: ' + contents[-2])
   # print('Average gates of correct circuits: ' + str(total_gates_used_in_correct / total_completed))
   print('~')
 
 
 if __name__ == '__main__':
   base = '../logs/cartstretch';
+  base = '../remotelogs/4bitcartstretch';
 
-  stems = [
-    '40$1',
-    '20$2',
-    '#4,3,3,3,3,3,3,3,3,3,3,3,3',
-    '10$4',
-    '8$5',
-    '#6,6,6,6,6,6,4',
-    '#7,7,7,7,7,5',
-    '#8,8,8,8,8',
-    '#9,9,9,9,4',
-    '#10,10,10,10'
-  ];
+  stems = [1,2,3,4,5,6,7,8,9,10]
 
-  base = '../logs/breed_count';
+  # stems = [
+  #   '40$1',
+  #   '20$2',
+  #   '#4,3,3,3,3,3,3,3,3,3,3,3,3',
+  #   '10$4',
+  #   '8$5',
+  #   '#6,6,6,6,6,6,4',
+  #   '#7,7,7,7,7,5',
+  #   '#8,8,8,8,8',
+  #   '#9,9,9,9,4',
+  #   '#10,10,10,10'
+  # ];
 
-  stems = [2,4,6,8,12,16,32,64,128];
+  # base = '../logs/breed_count';
+  #
+  # stems = [2,4,6,8,12,16,32,64,128];
 
   # base = '../logs/mutations'
   # stems = [2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,70,80,90,100]
