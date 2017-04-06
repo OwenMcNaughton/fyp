@@ -683,12 +683,12 @@ string Circuit::DotGraph() {
   string dotgraph = "digraph {\n";
   int out_of = pow(2, inputs_.size());
   int total_out_of = out_of * outputs_.size();
-  // dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
-  //   to_string(correct_count_) + " / " + to_string(out_of) + "\n" +
-  //   to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
-  dotgraph += "labelloc=\"\t\"\nlabel=\"Percent: " + to_string(percent_) +
-    ", used " + to_string(gate_count_ - superfluous_count_) + " out of " +
-    to_string(gate_count_) + "\"\n";
+  dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
+    to_string(correct_count_) + " / " + to_string(out_of) + "\n" +
+    to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
+  // dotgraph += "labelloc=\"\t\"\nlabel=\"Percent: " + to_string(percent_) +
+  //   ", used " + to_string(gate_count_ - superfluous_count_) + " out of " +
+  //   to_string(gate_count_) + "\"\n";
   for (auto& v : gates_) {
     for (Gate* g : v) {
       string node_type = g->orphan_ || g->childfree_

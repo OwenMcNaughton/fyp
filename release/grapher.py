@@ -19,7 +19,7 @@ def smoothJag(xs):
       xs[i] = m
 
 
-def multiGraphArse(xss, key, xlabel, ylabel, title):
+def multiGraphArse(xss, key, xlabel, ylabel, title, fappend = ''):
   xy = []
   for xs in xss:
     i = 0
@@ -30,10 +30,10 @@ def multiGraphArse(xss, key, xlabel, ylabel, title):
       innery.append(x)
       i += 1
     xy.append((innerx, innery))
-  multiGraph(xy, key, xlabel, ylabel, title)
+  multiGraph(xy, key, xlabel, ylabel, title, fappend)
 
 
-def multiGraph(xy, key, xlabel, ylabel, title):
+def multiGraph(xy, key, xlabel, ylabel, title, fappend = ''):
   i = 0
   maxx = -9999999999999
   minx = 9999999999999
@@ -56,13 +56,13 @@ def multiGraph(xy, key, xlabel, ylabel, title):
   plt.title(title)
   plt.legend(loc=4)
   plt.show()
-  plt.savefig('../figures/' + title.replace(' ', '_') + '.png')
-  f = open('../figures/' + title.replace(' ', '_'), 'w')
+  plt.savefig('../figures/' + (title + fappend).replace(' ', '_') + '.png')
+  f = open('../figures/' + (title + fappend).replace(' ', '_'), 'w')
   f.write(str(x) + '\n')
   f.write(str(y))
 
 
-def graph(x, y, xlabel, ylabel, title):
+def graph(x, y, xlabel, ylabel, title, fappend = ''):
   corrcoef = np.corrcoef(x, y)[0][1]
   plt.plot(x, y, 'ro')
   plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, 1))(np.unique(x)), label='r=' + str(corrcoef))
@@ -72,8 +72,8 @@ def graph(x, y, xlabel, ylabel, title):
   plt.title(title)
   plt.legend(loc=2)
   plt.show()
-  plt.savefig('../figures/' + title.replace(' ', '_') + '.png')
-  f = open('../figures/' + title.replace(' ', '_'), 'w')
+  plt.savefig('../figures/' + (title + fappend).replace(' ', '_') + '.png')
+  f = open('../figures/' + (title + fappend).replace(' ', '_'), 'w')
   f.write(str(x) + '\n')
   f.write(str(y))
 
@@ -97,8 +97,8 @@ for chunk in contents:
   if len(lines) < 3:
     continue
   for line in lines:
-    if 'folder' in line:
-      mutes.append(int(re.findall(r'\d+', line)[0]))
+    # if 'folder' in line:
+    #   mutes.append(int(re.findall(r'\d+', line)[0]))
     if 'Completed' in line:
       completed.append(float(re.findall("\d+\.\d+", line)[0]))
     if 'Average Evals of Correct' in line:
@@ -149,17 +149,20 @@ carts = [1,2,3,4,5,6,7,8,9,10]
 # graph(carts, avg_gates, 'Cartesian plane rows', 'Final gate count',
 #     'Effect of cartesian plane size on final gate count for 4bit multiplier')
 
-selection = [1,1,0,1,0,0,0,1,0,1]
-newcarts = []
-new_hist = []
-for i in range(len(selection)):
-  if selection[i] == 1:
-    newcarts.append(carts[i])
-    new_hist.append(weighted_percent_hist[i])
+# selection = [1,1,0,1,0,0,0,1,0,1]
+# # selection = [1,1,1,1,1,1,1,1,1,1]
+# newcarts = []
+# new_hist = []
+# for i in range(len(selection)):
+#   if selection[i] == 1:
+#     newcarts.append(carts[i])
+#     new_hist.append(weighted_percent_hist[i])
 
 # smoothJagBig(weighted_percent_hist)
 # multiGraphArse(weighted_percent_hist, carts, 'Generation', 'Best correctness',
 #     'Effect of cartesian plane row count on correctness progress for 4bit multiplier')
 smoothJagBig(weighted_percent_hist)
-multiGraphArse(new_hist, newcarts, 'Generation', 'Best correctness',
-  'Effect of cartesian plane row count on correctness progress for 4bit multiplier')
+# multiGraphArse(new_hist, newcarts, 'Generation', 'Best correctness',
+#   'Cartesian plane size vs correctness progress: 4bit multiplier', '1half')
+multiGraphArse(weighted_percent_hist, [1], 'Generation', 'Best correctness',
+  'Correctness progress: 2bit multiplier', 'full')

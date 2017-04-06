@@ -55,7 +55,10 @@ void Circuit::Evolve(const string& target) {
     if (i != 1 && Util::kBreedType != Util::kBreedTypeDisable) {
       if (Util::kBreedType == Util::kBreedTypeAbsPoly ||
           Util::kBreedType == Util::kBreedTypePerPoly) {
-        circ = Breed(circs);
+        vector<Circuit*> c = {circ};
+        Circuit* bred = Breed(circs);
+        c.push_back(bred);
+        sort(c.begin(), c.end());
       }
     }
     for (int j = 0; j < Util::kThreads; j++) {
@@ -108,11 +111,11 @@ void Circuit::Evolve(const string& target) {
     circ = newcirc;
     if (Util::kBreedType != Util::kBreedTypeDisable) {
       circs = elog.generations_.back().bests_;
-      elog.total_history_.push_back(circ->total_count_);
-      elog.weighted_total_history_.push_back(circ->total_weighted_count_);
-      elog.percent_history_.push_back(circ->percent_);
-      elog.weighted_percent_history_.push_back(circ->weighted_percent_);
     }
+    elog.total_history_.push_back(circ->total_count_);
+    elog.weighted_total_history_.push_back(circ->total_weighted_count_);
+    elog.percent_history_.push_back(circ->percent_);
+    elog.weighted_percent_history_.push_back(circ->weighted_percent_);
 
     if (Util::kBasicLog) {
       cout << "\n\tBestTotal: " << circ->total_count_ << " BestExact: " <<
@@ -153,6 +156,7 @@ GenerationLog Circuit::MakeChildren(
   } else if (Util::kMutationMode == Util::kMutationModePercent) {
     mutation_count = int((Util::kMutatePercent / 100.0) * parent->genome_size_);
   }
+
   for (int j = 0; j != Util::kChildren; j++) {
     Circuit* child = parent->Copy();
     if (Util::kMutationMode == Util::kMutationModeRandom){

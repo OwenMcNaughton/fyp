@@ -73,8 +73,10 @@ def parse(folder):
 if __name__ == '__main__':
   base = '../logs/cartstretch';
   base = '../remotelogs/4bitcartstretch';
+  base = '../logs/aa';
 
   stems = [1,2,3,4,5,6,7,8,9,10]
+  stems = ['']
 
   # stems = [
   #   '40$1',
