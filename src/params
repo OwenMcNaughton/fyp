@@ -13,7 +13,7 @@ kSaveDotGraphs: 1
 kPruneOrphans: 1
 kLog: 1
 kLogIter: 0
-kLegalGateTypes: 1,2,3
+kLegalGateTypes: 1,2,3,4,12,13
 kBreedType: 0
 kBreedSample: 4
 kBreedEdges: 1

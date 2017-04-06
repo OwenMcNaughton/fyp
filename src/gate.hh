@@ -30,7 +30,7 @@ class Gate {
   int ExpectedInputCount();
 
   static const int kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf,
-    kFullSum, kFullCarry, kHalfSum, kHalfCarry;
+    kFullSum, kFullCarry, kHalfSum, kHalfCarry, kNor, kXnr;
   static int kLineOn, kLineOff, kLineUnknown;
   static vector<int> kGates;
   static map<int, string> kDotGraphNodes;

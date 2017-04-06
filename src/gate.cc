@@ -7,11 +7,12 @@ const int Gate::kNot = 0, Gate::kAnd = 1,
   Gate::kOrr = 2, Gate::kXor = 3, Gate::kNnd = 4,
   Gate::kOnn = 5, Gate::kOff = 6, Gate::kBuf = 7,
   Gate::kFullSum = 8, Gate::kFullCarry = 9,
-  Gate::kHalfSum = 10, Gate::kHalfCarry = 11;
+  Gate::kHalfSum = 10, Gate::kHalfCarry = 11,
+  Gate::kNor = 12, Gate::kXnr = 13;
 
 vector<int> Gate::kGates = {
   kNot, kAnd, kOrr, kXor, kNnd, kOnn, kOff, kBuf,
-  kFullSum, kFullCarry, kHalfSum, kHalfCarry
+  kFullSum, kFullCarry, kHalfSum, kHalfCarry, kNor, kXnr
 };
 
 vector<vector<vector<int>>> kFullSumTruth = {
@@ -76,7 +77,9 @@ map<int, string> Gate::kDotGraphNodes = {
   {kAnd, "[shape=invhouse,color=forestgreen,penwidth=2,label=\"AND\"]"},
   {kOrr, "[shape=invtriangle,color=darkorchid,penwidth=2,label=\"ORR\"]"},
   {kXor, "[shape=invtriangle,peripheries=2,color=red,penwidth=1,label=\"XOR\"]"},
-  {kNnd, "[shape=invhouse,peripheries=2,color=lawngreen,penwidth=1]"},
+  {kNnd, "[shape=invhouse,color=forestgreen,penwidth=1,label=\"NND\"]"},
+  {kNor, "[shape=invtriangle,color=darkorchid,penwidth=1,label=\"NOR\"]"},
+  {kXnr, "[shape=invtriangle,peripheries=2,color=red,penwidth=2,label=\"XNR\"]"},
   {kNot, "[shape=invtriangle,color=gold,penwidth=2]"},
   {kOnn, "[shape=circle,color=black,penwidth=2]"},
   {kOff, "[shape=circle,color=black,penwidth=2]"},
@@ -110,7 +113,8 @@ Gate* Gate::Copy(map<string, Gate*>& table) {
 
 void Gate::Mutate() {
   if (mutateable_) {
-    type_ = Util::kLegalGateTypes[rand() % Util::kLegalGateTypes.size()];
+    int r = rand() % Util::kLegalGateTypes.size();
+    type_ = Util::kLegalGateTypes[r];
   }
 }
 
@@ -219,6 +223,24 @@ int Gate::Compute() {
       return stored_answer_;
     }
   }
+  if (type_ == kNor) {
+    if (inputs_.empty()) {
+      stored_answer_ = kLineUnknown;
+    } else {
+      for (Gate* in : inputs_) {
+        int res = in->Compute();
+        if (res == kLineOn) {
+          stored_answer_ = kLineOff;
+          return stored_answer_;
+        } else if (res == kLineUnknown) {
+          stored_answer_ = kLineUnknown;
+          return stored_answer_;
+        }
+      }
+      stored_answer_ = kLineOn;
+      return stored_answer_;
+    }
+  }
   if (type_ == kXor) {
     if (inputs_.empty()) {
       stored_answer_ = kLineUnknown;
@@ -240,6 +262,30 @@ int Gate::Compute() {
         }
       }
       stored_answer_ = one_on ? kLineOn : kLineOff;
+      return stored_answer_;
+    }
+  }
+  if (type_ == kXnr) {
+    if (inputs_.empty()) {
+      stored_answer_ = kLineUnknown;
+      return stored_answer_;
+    } else {
+      bool one_on = false;
+      for (Gate* in : inputs_) {
+        int res = in->Compute();
+        if (res == kLineOn) {
+          if (one_on) {
+            stored_answer_ = kLineOn;
+            return stored_answer_;
+          } else {
+            one_on = true;
+          }
+        } else if (res == kLineUnknown) {
+          stored_answer_ = kLineUnknown;
+          return stored_answer_;
+        }
+      }
+      stored_answer_ = one_on ? kLineOff : kLineOn;
       return stored_answer_;
     }
   }
@@ -327,6 +373,10 @@ bool Gate::CanTakeInput() {
       return inputs_.size() < 2;
     case kNnd:
       return inputs_.size() < 2;
+    case kNor:
+      return inputs_.size() < 2;
+    case kXnr:
+      return inputs_.size() < 2;
     case kFullSum:
       return inputs_.size() < 3;
     case kFullCarry:
@@ -344,7 +394,9 @@ int Gate::ExpectedInputCount() {
       return 1;
     case kAnd:
     case kXor:
+    case kXnr:
     case kOrr:
+    case kNor:
     case kNnd:
     case kHalfSum:
     case kHalfCarry:
