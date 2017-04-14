@@ -47,13 +47,13 @@ def iter(circfile, iterations, folder, threshold):
 def outerIter():
   # for mutations in [4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,60,70,80,90,100]:
   # for mutations in [55,65,75,85,95,100,125,150,200]:
-  for mutations in [10]:
-    modParams('kMutations', mutations)
+  for types in [0,1,3]:
+    modParams('kBreedType', types)
     iterations = 50
     threshold = 1000
-    folder = 'aa' + str(mutations)
+    folder = 'breedtypes' + str(types)
     print(folder)
-    circfile = '2bitmulstarter'
+    circfile = '4bitmulstarter'
     for i in range(int(iterations)):
       try:
         print('./main ' + circfile + ' ' + str(i) + ' ' + str(threshold) + ' ' + folder)

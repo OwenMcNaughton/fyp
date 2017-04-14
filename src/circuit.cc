@@ -136,6 +136,7 @@ void Circuit::Evolve(const string& target) {
         circ->correct_count_ << " WeightedCount: " << circ->total_weighted_count_ <<
         "\tTOTAL_PERCENT: " << actual << "  WEIGHTED_PERCENT: " << weighted_actual << endl;
     }
+    cout << "EVALS: " << evaluations << endl;
 
     if (Util::kSaveDotGraphs) {
       SaveDotGraph(circ, "../graphs/", i + 1, elog);
