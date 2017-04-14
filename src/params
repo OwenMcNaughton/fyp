@@ -1,5 +1,5 @@
 kGens: 100
-kEvaluations: 300000
+kEvaluations: 20000
 kChildren: 100
 kMutations: 10
 kMutatePercent: 6

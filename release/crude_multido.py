@@ -53,7 +53,7 @@ def outerIter():
     threshold = 1000
     folder = 'breedtypes' + str(types)
     print(folder)
-    circfile = '4bitmulstarter'
+    circfile = '2bitmulstarter'
     for i in range(int(iterations)):
       try:
         print('./main ' + circfile + ' ' + str(i) + ' ' + str(threshold) + ' ' + folder)
