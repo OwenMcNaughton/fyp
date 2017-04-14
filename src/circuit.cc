@@ -45,6 +45,8 @@ void Circuit::Evolve(const string& target) {
     SaveDotGraph(circ, "../graphs/", 0, elog);
   }
 
+  circ->TestAll();
+
   int evaluations = 0;
   ThreadPool pool(Util::kThreads);
 
@@ -88,28 +90,42 @@ void Circuit::Evolve(const string& target) {
         }
         if (Util::kBreedType == Util::kBreedTypeDisable) {
           glog.best_ = Circuit::GetBestChild(children);
+          glog.bests_ = {glog.best_};
         } else {
           glog.bests_ = Circuit::GetBestChildren(children);
           glog.best_ = glog.bests_[0];
         }
+        glog.best_->TestAll();
+        glog.best_->BinTruthToDec();
         return glog;
       });
       futures.push_back(move(fut));
     }
 
-    int best_count = circ->total_count_;
+    circ->BinTruthToDec();
+    int best_count = 0;
+    if (Util::kTruthWeight) {
+      best_count = circ->total_weighted_count_;
+    } else {
+      best_count = circ->total_count_;
+    }
     vector<GenerationLog> glogs;
     for (int j = 0; j < Util::kThreads; j++) {
       auto glog = futures[j].get();
       elog.hashes_.insert(glog.hashes_.begin(), glog.hashes_.end());
-      if (glog.best_ && glog.best_->total_count_ >= best_count ||
-          Util::kBreedType != 0) {
-        circ = glog.best_;
-        best_count = glog.best_->total_count_;
+      if (Util::kTruthWeight) {
+        if (glog.best_ && glog.best_->total_weighted_count_ >= best_count) {
+          circ = glog.best_;
+          best_count = glog.best_->total_weighted_count_;
+        }
+      } else {
+        if (glog.best_ && glog.best_->total_count_ >= best_count) {
+          circ = glog.best_;
+          best_count = glog.best_->total_count_;
+        }
       }
       glogs.push_back(glog);
     }
-    circ->BinTruthToDec();
     float actual = circ->total_count_ / float(elog.goal_total_count_);
     float weighted_actual = circ->total_weighted_count_ / float(elog.goal_total_weighted_count_);
     circ->percent_ = actual;
