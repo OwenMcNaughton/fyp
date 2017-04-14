@@ -3,6 +3,7 @@ matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 import numpy as np
 import re
+import math
 
 
 def smoothJagBig(xss):
@@ -19,7 +20,7 @@ def smoothJag(xs):
       xs[i] = m
 
 
-def multiGraphArse(xss, key, xlabel, ylabel, title, fappend = ''):
+def multiGraphArse(xss, key, xlabel, ylabel, title, fappend = '', niny = -1, naxy = -1):
   xy = []
   for xs in xss:
     i = 0
@@ -30,17 +31,21 @@ def multiGraphArse(xss, key, xlabel, ylabel, title, fappend = ''):
       innery.append(x)
       i += 1
     xy.append((innerx, innery))
-  multiGraph(xy, key, xlabel, ylabel, title, fappend)
+  multiGraph(xy, key, xlabel, ylabel, title, fappend, niny, naxy)
 
 
-def multiGraph(xy, key, xlabel, ylabel, title, fappend = ''):
+def multiGraph(xy, key, xlabel, ylabel, title, fappend = '', niny = -1, naxy = -1):
   i = 0
   maxx = -9999999999999
   minx = 9999999999999
   maxy = -9999999999999
   miny = 9999999999999
   for (x, y) in xy:
-    plt.plot(x, y, label=key[i])
+    if len(key) > 0:
+      plt.plot(x, y, label=key[i])
+    else:
+      plt.plot(x, y, 'k-')
+
     i += 1
     if max(x) > maxx:
       maxx = max(x)
@@ -50,11 +55,16 @@ def multiGraph(xy, key, xlabel, ylabel, title, fappend = ''):
       minx = min(x)
     if min(y) < miny:
       miny = min(y)
-  plt.axis([minx - maxx * .05, maxx * 1.05, miny - maxy * .05, max(y) * 1.05])
+  if niny == -1:
+    plt.axis([minx - maxx * .05, maxx * 1.05, miny - maxy * .05, max(y) * 1.05])
+  else:
+    plt.axis([minx - maxx * .05, maxx * 1.05, niny, naxy])
+
   plt.xlabel(xlabel)
   plt.ylabel(ylabel)
   plt.title(title)
-  plt.legend(loc=4)
+  if len(key):
+    plt.legend(loc=4)
   plt.show()
   plt.savefig('../figures/' + (title + fappend).replace(' ', '_') + '.png')
   f = open('../figures/' + (title + fappend).replace(' ', '_'), 'w')
@@ -62,11 +72,18 @@ def multiGraph(xy, key, xlabel, ylabel, title, fappend = ''):
   f.write(str(y))
 
 
-def graph(x, y, xlabel, ylabel, title, fappend = ''):
+def graph(x, y, xlabel, ylabel, title, fappend = '', errorbars = [], niny = -1, naxy = -1):
   corrcoef = np.corrcoef(x, y)[0][1]
-  plt.plot(x, y, 'ro')
+  if len(errorbars) > 0:
+    plt.errorbar(x, y, fmt='ro', yerr=errorbars, ecolor='g')
+  else:
+    plt.plot(x, y, 'ro')
   plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, 1))(np.unique(x)), label='r=' + str(corrcoef))
-  plt.axis([min(x) - max(x) * .05, max(x) * 1.05, min(y) - max(y) * .05, max(y) * 1.05])
+
+  if niny == -1:
+    plt.axis([min(x) - max(x) * .05, max(x) * 1.05, min(y) - max(y) * .05, max(y) * 1.05])
+  else:
+    plt.axis([min(x) - max(x) * .05, max(x) * 1.05, niny, naxy])
   plt.xlabel(xlabel)
   plt.ylabel(ylabel)
   plt.title(title)
@@ -86,12 +103,16 @@ completed = []
 avg_evals = []
 avg_evals_correct = []
 avg_correct = []
+avg_weighted_correct = []
 final_correctness = []
 avg_gates = []
 total_hist = []
 weighted_total_hist = []
 percent_hist = []
 weighted_percent_hist = []
+errors = []
+total_corrects = []
+skates_used = []
 for chunk in contents:
   lines = chunk.split('\n')
   if len(lines) < 3:
@@ -107,8 +128,15 @@ for chunk in contents:
       avg_evals.append(float(re.findall("\d+\.\d+", line)[0]))
     if 'Average Correctness' in line:
       avg_correct.append(float(re.findall("\d+\.\d+", line)[0]))
+    if 'Average Weighted Correctness' in line:
+      avg_weighted_correct.append(float(re.findall("\d+\.\d+", line)[0]))
+    if 'All Correctnesses' in line:
+      total_corrects.append([float(i) for i in (re.findall("\d+\.\d+", line))])
     if 'Gates used' in line:
       avg_gates.append(int(re.findall(r'\d+', line)[0]))
+    if 'Skates useds' in line:
+      print([int(i) for i in(re.findall(r'\d+', line))])
+      skates_used.append([int(i) for i in(re.findall(r'\d+', line))])
     if 'total_count_hist' in line:
       line2 = line.split(':')[1]
       line2 = line2.split(',')[0:-2]
@@ -131,7 +159,26 @@ for chunk in contents:
       weighted_percent_hist.append(line2)
       final_correctness.append(line2[-1])
 
+
+print(avg_gates)
+print(str(sum(avg_gates) / len(avg_gates)) + ' ' + str(np.var(avg_gates)))
+print(final_correctness)
+print(str(sum(final_correctness) / len(final_correctness)) + ' ' + str(np.var(final_correctness)))
+
 carts = [1,2,3,4,5,6,7,8,9,10]
+muts = ['1%','2%','3%','4%','5%','6%','7%','8%','9%','10%']
+breeds = [1,2,4,8,16]
+
+errorbars = []
+# avg_gates = []
+for datums in total_corrects:
+  avg = sum(datums) / len(datums)
+  # avg_gates.append(avg)
+  stddev = 0
+  for d in datums:
+    stddev += (d - avg) * (d - avg)
+  stddev = math.sqrt(stddev / len(datums))
+  errorbars.append(stddev)
 
 # print(avg_correct)
 
@@ -164,5 +211,23 @@ carts = [1,2,3,4,5,6,7,8,9,10]
 smoothJagBig(weighted_percent_hist)
 # multiGraphArse(new_hist, newcarts, 'Generation', 'Best correctness',
 #   'Cartesian plane size vs correctness progress: 4bit multiplier', '1half')
-multiGraphArse(weighted_percent_hist, [1], 'Generation', 'Best correctness',
-  'Correctness progress: 2bit multiplier', 'full')
+# multiGraphArse(weighted_percent_hist, [1], 'Generation', 'Best correctness',
+#   'Correctness progress: 2bit multiplier', 'full')
+# multiGraphArse(weighted_percent_hist, muts, 'Generation', 'Best Correctness',
+#     'Correctness progress across mutation percentage: 4bit multiplier', 'full')
+# graph(carts, avg_correct, 'Mutation%', 'Avg Correctness',
+#     'Mutation Percentage vs Avg Correctness: 4bit multiplier', 'full')
+# graph(carts, avg_correct, 'Mutation%', 'Avg Correctness',
+#     'Mutation Percentage vs Avg Correctness: 4bit multiplier', 'full_error2', errorbars)
+# graph(carts, final_correctness, 'Row Count', 'Avg Correctness',
+#     'Row Count vs Avg Correctness: 4bit multiplier', 'full_error', errorbars)
+# multiGraphArse(weighted_percent_hist, [], 'Generation', 'Best correctness',
+#     'Allowable Gate Types = {AND,OR,XOR}', 'full2', 0.65, 1.00)
+# multiGraphArse(weighted_percent_hist, [], 'Generation', 'Best correctness',
+#     'Allowable Gate Types = {AND,OR,XOR,NAND,NOR,XNOR}', 'full2', 0.65, 1.00)
+# graph(breeds, final_correctness, 'Crossbreed Count', 'Final correctness',
+#     'What even is ', 'ffff', errorbars)
+# graph(carts, avg_gates, 'Row Count', 'Avg Final Gates',
+#     'Row Count vs Avg Final Gates: 4bit multiplier', 'ff', errorbars, 10, 40)
+graph(carts, avg_gates, 'Mutation%', 'Avg Correctness',
+  'tmp', 'full_error2', errorbars)

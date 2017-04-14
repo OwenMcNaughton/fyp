@@ -40,6 +40,20 @@ void Circuit::CopyGates(Circuit* src, Circuit* dst) {
   }
 }
 
+vector<Circuit*> Circuit::MultiBreed(vector<Circuit*>& parents, Circuit* best) {
+  vector<Circuit*> multi_breds = {best};
+  for (int i = 0; i != Util::kThreads - 1; i++) {
+    int idx1 = rand() % parents.size();
+    int idx2 = rand() % parents.size();
+    while (idx2 == idx1) {
+      idx2 = rand() % parents.size();
+    }
+    vector<Circuit*> pairing = {parents[idx1], parents[idx2]};
+    multi_breds.push_back(Breed(pairing));
+  }
+  return multi_breds;
+}
+
 Circuit* Circuit::Breed(vector<Circuit*>& parents) {
   Circuit* c = new Circuit();
 

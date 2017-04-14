@@ -47,15 +47,16 @@ def iter(circfile, iterations, folder, threshold):
 def outerIter():
   # for mutations in [4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,60,70,80,90,100]:
   # for mutations in [55,65,75,85,95,100,125,150,200]:
-  for mutations in [175]:
+  for mutations in [10]:
     modParams('kMutations', mutations)
     iterations = 50
     threshold = 1000
-    folder = 'mutations' + str(mutations)
+    folder = 'aa' + str(mutations)
     print(folder)
     circfile = '2bitmulstarter'
     for i in range(int(iterations)):
       try:
+        print('./main ' + circfile + ' ' + str(i) + ' ' + str(threshold) + ' ' + folder)
         p = Popen(['./main', circfile, str(i), str(threshold), folder])
         output, err = p.communicate()
       except OSError:
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     pass
 
 
-  # outerIter()
+  outerIter()
   # outerIter2()
-  outerCartIter()
+  # outerCartIter()
   # iter(sys.argv[1], sys.argv[2], sys.argv[3], 1000)

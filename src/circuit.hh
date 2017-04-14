@@ -88,6 +88,7 @@ class Circuit {
 
   static void CopyGates(Circuit* src, Circuit* dst);
   static Circuit* Breed(vector<Circuit*>& parents);
+  static vector<Circuit*> MultiBreed(vector<Circuit*>& parents, Circuit* best);
 
   static int GetDanglingCount(Circuit* circ);
   long Hash();

@@ -32,6 +32,7 @@ Circuit::Circuit(const string& contents) {
 void Circuit::Evolve(const string& target) {
   Circuit* circ = new Circuit(ReadFile("../circs/" + target + ".circ"));
   vector<Circuit*> circs;
+  vector<Circuit*> multibred_circs;
 
   EvolutionLog elog(circ);
 
@@ -59,10 +60,22 @@ void Circuit::Evolve(const string& target) {
         Circuit* bred = Breed(circs);
         c.push_back(bred);
         sort(c.begin(), c.end());
+      } else {
+        multibred_circs = MultiBreed(circs, circ);
       }
     }
     for (int j = 0; j < Util::kThreads; j++) {
-      Circuit* circ2 = circ->Copy();
+      Circuit* circ2 = nullptr;
+      if (i == 1) {
+        circ2 = circ->Copy();
+      } else {
+        if (Util::kBreedType == Util::kBreedTypeAbsMono ||
+            Util::kBreedType == Util::kBreedTypePerMono) {
+          circ2 = multibred_circs[j];
+        } else {
+          circ2 = circ->Copy();
+        }
+      }
       auto fut = pool.enqueue([circ2, i, j, elog]() {
         vector<Circuit*> children;
         auto glog = Circuit::MakeChildren(circ2, children, i, elog);
@@ -111,6 +124,7 @@ void Circuit::Evolve(const string& target) {
     circ = newcirc;
     if (Util::kBreedType != Util::kBreedTypeDisable) {
       circs = elog.generations_.back().bests_;
+      cout << "\nLEN: " << circs.size() << endl;
     }
     elog.total_history_.push_back(circ->total_count_);
     elog.weighted_total_history_.push_back(circ->total_weighted_count_);
@@ -232,7 +246,7 @@ vector<Circuit*> Circuit::GetBestChildren(vector<Circuit*>& children) {
     : children.size() * float(Util::kBreedSample / float(children.size()));
   n = n % 2 == 0 ? n : n - 1;
   n = n == 0 ? 1 : n;
-  for (int i = n; i != children.size(); i++) {
+  for (int i = 1; i != children.size(); i++) {
     delete children[i];
   }
   children.erase(children.begin() + 1, children.end());

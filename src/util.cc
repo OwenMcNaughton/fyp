@@ -199,7 +199,7 @@ void Util::InitParams(int argc, char** argv, const string& file) {
   Util::kLog = split_map_["kLog"];
   Util::kLogIter = split_map_["kLogIter"];
   Util::kBreedType = split_map_["kBreedType"];
-  Util::kBreedSample = split_map_["kBreedSample"] / Util::kThreads;
+  Util::kBreedSample = split_map_["kBreedSample"];
   Util::kBreedEdges = split_map_["kBreedEdges"];
   Util::kBreedGates = split_map_["kBreedGates"];
   Util::kBasicLog = split_map_["kBasicLog"];
@@ -387,6 +387,12 @@ GenerationLog::GenerationLog() {
 
 }
 
+struct CircuitWeightedTruthSort {
+  inline bool operator() (Circuit* circ1, Circuit* circ2) {
+    return circ1->total_weighted_count_ > circ2->total_weighted_count_;
+  }
+};
+
 GenerationLog::GenerationLog(const vector<GenerationLog>& logs, Circuit* best) {
   best_ = logs[0].best_;
   for (const auto& glog : logs) {
@@ -399,11 +405,15 @@ GenerationLog::GenerationLog(const vector<GenerationLog>& logs, Circuit* best) {
       glog.total_counts_.begin(), glog.total_counts_.end());
     dupes_ += glog.dupes_;
     bests_.insert(bests_.end(), glog.bests_.begin(), glog.bests_.end());
-    if (glog.best_->total_count_ >= best_->total_count_) {
-      best_ = glog.best_;
-    }
   }
+  sort(bests_.begin(), bests_.end(), CircuitWeightedTruthSort());
+  if (bests_.size() > Util::kBreedSample) {
+    for (int i = Util::kBreedSample; i != bests_.size(); i++) {
+      delete bests_[i];
+    }
+    bests_.erase(bests_.begin() + Util::kBreedSample, bests_.end());
+  }
+  best_ = bests_[0];
   sort(total_counts_.begin(), total_counts_.end());
   sort(correct_counts_.begin(), correct_counts_.end());
-  best_ = best;
 }
