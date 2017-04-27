@@ -139,7 +139,7 @@ void Circuit::Evolve(const string& target) {
     if (Util::kLog){
       GenerationLog merged_glog(glogs, circ);
       elog.generations_.push_back(merged_glog);
-      elog.SaveFullLog(evaluations, "final");
+      elog.SaveFullLog(evaluations, "final" + to_string(Util::kLogIter));
     }
     Circuit* newcirc = elog.DetectStagnation();
     circ = newcirc;
@@ -170,12 +170,12 @@ void Circuit::Evolve(const string& target) {
     float thresh = Util::kThreshold / 1000.0f;
     if (actual >= thresh) {
       cout << "Got it in gen " << i << " after " << evaluations << " evals" << endl;
-      elog.SaveFullLog(evaluations, "final");
+      elog.SaveFullLog(evaluations, "final" + to_string(Util::kLogIter));
       return;
     }
     if (evaluations > Util::kEvaluations) {
       cout << "Failed after " << i << " gens" << endl;
-      elog.SaveFullLog(evaluations, "final");
+      elog.SaveFullLog(evaluations, "final" + to_string(Util::kLogIter));
       return;
     }
   }
