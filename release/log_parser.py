@@ -1,6 +1,7 @@
 import click
 from subprocess import call, Popen, PIPE
 import os
+import math
 
 
 def modParams(param, new_value):
@@ -85,31 +86,43 @@ def parseIntl(folder, files):
     total_corrects.append([float(i) for i in contents[-3].split(',')[0:-2]][-1])
     # print(weighted_percent_hist)
 
+  ins = 8
+  outs = 8
+  total_out = math.pow(2, ins) * outs
+  weighted_out = math.pow(2, ins) * math.pow(2, outs)
+
   all_weighted_percents = []
   tch = []
   for idx in range(len(total_count_hist[0])):
     tot = 0
     for arr in range(len(total_count_hist)):
+      if idx >= len(total_count_hist[arr]):
+        continue
       tot += total_count_hist[arr][idx]
     tch.append(int(tot / len(total_count_hist)))
   wtch = []
   for idx in range(len(weighted_total_count_hist[0])):
     tot = 0
     for arr in range(len(weighted_total_count_hist)):
+      if idx >= len(weighted_total_count_hist[arr]):
+        continue
       tot += weighted_total_count_hist[arr][idx]
     wtch.append(int(tot / len(weighted_total_count_hist)))
   ph = []
-  for idx in range(len(percent_hist[0])):
-    tot = 0
-    for arr in range(len(percent_hist)):
-      tot += percent_hist[arr][idx]
-    ph.append((tot / len(percent_hist)))
+  for i in total_count_hist[0]:
+    ph.append(i / total_out)
   wph = []
-  for idx in range(len(weighted_percent_hist[0])):
-    tot = 0
-    for arr in range(len(weighted_percent_hist)):
-      tot += weighted_percent_hist[arr][idx]
-    wph.append((tot / len(weighted_percent_hist)))
+  for i in weighted_total_count_hist[0]:
+    wph.append(i / weighted_out)
+
+
+  total_corrects = []
+  total_percents = []
+  for i in weighted_total_count_hist:
+    total_corrects.append(i[-1] / weighted_out)
+  for i in weighted_total_count_hist:
+    total_percents.append(i[-1] / weighted_out)
+
 
   print(total)
   print('folder: ' + os.path.basename(os.path.normpath(folder)))
@@ -132,14 +145,20 @@ def parseIntl(folder, files):
 if __name__ == '__main__':
   base = '../logs/cartstretch';
   # base = '../logs/aa';
-  base = '../gate_types/gate_types';
   base = '../breeding/breed';
-  base = '../remotelogs/4bitcartstretch';
-  base = '../mutperc/mutationpercentage';
+  base = '../gate_types/gate_types';
+  base = '../mul_cart/4bitcartstretch';
+  # base = '../mutperc/mutationpercentage';
+  # base = '../adder_cart/adder_cart_'
+  # base = '../adder_cart/breedtypes'
+  base = '../adder_cart2/breedtypes_add'
+  base = '../3mulcart/3bitmul_cart_'
+  base = '../3mulcart/4bitmul_freeze_cart_'
 
   stems = [1,2,3,4,5,6,7,8,9,10]
   # stems = ['1,2,3', '1,2,3,4,12,13']
   # stems = [1,2,4,8,16]
+  # stems = [0,1,3]
 
   # stems = [
   #   '40$1',
@@ -164,9 +183,12 @@ if __name__ == '__main__':
   # stems = [4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,125,150,175,200]
   # stems = [10,12,14,16,18,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,125,150,175,200]
 
-  for i in stems:
-    full = base + str(i) + '/'
-    parseFolderAvg(full)
+  # for i in stems:
+  #   full = base + str(i) + '/'
+  #   parseFolderAvg(full)
   # parse('../logs/unweight/')
 
+  parseFolder('../gate_types/gate_types1,2,3/')
   # parseFolder('../gate_types/gate_types1,2,3,4,12,13/')
+  # parseFolder('../adder_cart/breedtypes3/')
+  # parseFolder('../adder_cart2/breedtypes_add3/')

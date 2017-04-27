@@ -34,6 +34,7 @@ class Util {
   static int kSeed;
   static int kSaveDotGraphs;
   static int kPruneOrphans;
+  static int kPrintOrphans;
   static int kLog;
   static int kLogIter;
   static string kLogFolder;

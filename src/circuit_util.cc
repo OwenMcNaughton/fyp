@@ -516,8 +516,13 @@ void Circuit::TestAll() {
   if (Util::kPruneOrphans) {
     DetectOrphans();
   }
-  FindBestPinningsIter(0);
-  AssignBestPinnings();
+
+  for (Gate* g : outputs_) {
+    best_pinnings_[g->name_] = PickRandomSrc(g->layer_);
+  }
+
+  // FindBestPinningsIter(0);
+  // AssignBestPinnings();
 
   TestAllIter(0);
 }
@@ -697,9 +702,10 @@ string Circuit::DotGraph() {
   string dotgraph = "digraph {\n";
   int out_of = pow(2, inputs_.size());
   int total_out_of = out_of * outputs_.size();
-  dotgraph += "labelloc=\"t\"\nlabel=\"" + PrintTruth() +
+  dotgraph += "rankdir=LR\n\tlabelloc=\"t\"\nlabel=\"" + PrintTruth() +
     to_string(correct_count_) + " / " + to_string(out_of) + "\n" +
-    to_string(total_count_) + " / " + to_string(total_out_of) + "\"\n";
+    to_string(total_count_) + " / " + to_string(total_out_of) +
+    "\nGates used: " + to_string(gate_count_) + "\"\n";
   // dotgraph += "labelloc=\"\t\"\nlabel=\"Percent: " + to_string(percent_) +
   //   ", used " + to_string(gate_count_ - superfluous_count_) + " out of " +
   //   to_string(gate_count_) + "\"\n";
@@ -709,7 +715,13 @@ string Circuit::DotGraph() {
         ? Gate::kDotGraphOrphanNode
         : Gate::kDotGraphNodes[g->type_];
       // string node_type = Gate::kDotGraphNodes[g->type_];
-      dotgraph += "\t" + g->name_ + " " + node_type + "\n";
+      if (g->orphan_ || g->childfree_) {
+        if (Util::kPrintOrphans) {
+          dotgraph += "\t" + g->name_ + " " + node_type + "\n";
+        }
+      } else {
+        dotgraph += "\t" + g->name_ + " " + node_type + "\n";
+      }
     }
   }
   for (Gate* g : inputs_) {
@@ -722,7 +734,14 @@ string Circuit::DotGraph() {
   dotgraph += "\n";
 
   for (auto& edge : edges_) {
-    dotgraph += "\t" + edge->src_->name_ + " -> " + edge->dst_->name_ + "\n";
+    if (edge->src_->orphan_ || edge->src_->childfree_ ||
+        edge->dst_->orphan_ || edge->dst_->childfree_) {
+      if (Util::kPrintOrphans) {
+        dotgraph += "\t" + edge->src_->name_ + " -> " + edge->dst_->name_ + "\n";
+      }
+    } else {
+      dotgraph += "\t" + edge->src_->name_ + " -> " + edge->dst_->name_ + "\n";
+    }
   }
 
   dotgraph += "\n}";

@@ -27,6 +27,7 @@ int Util::kThreads = 0;
 int Util::kSeed = 0;
 int Util::kSaveDotGraphs = 0;
 int Util::kPruneOrphans = 0;
+int Util::kPrintOrphans = 0;
 int Util::kLog = 0;
 int Util::kLogIter = 0;
 map<string, int> Util::split_map_ = {};
@@ -196,6 +197,7 @@ void Util::InitParams(int argc, char** argv, const string& file) {
   Util::kSeed = split_map_["kSeed"];
   Util::kSaveDotGraphs = split_map_["kSaveDotGraphs"];
   Util::kPruneOrphans = split_map_["kPruneOrphans"];
+  Util::kPrintOrphans = split_map_["kPrintOrphans"];
   Util::kLog = split_map_["kLog"];
   Util::kLogIter = split_map_["kLogIter"];
   Util::kBreedType = split_map_["kBreedType"];
@@ -216,9 +218,10 @@ EvolutionLog::EvolutionLog(Circuit* skeleton) {
   for (const auto& l : skeleton->gates_) {
     rows_.push_back(l.size());
   }
+
   goal_correct_count_ = pow(2, skeleton->inputs_.size());
   goal_total_count_ = goal_correct_count_ * skeleton->outputs_.size();
-  goal_total_weighted_count_ = goal_correct_count_ * pow(2, skeleton->inputs_.size());
+  goal_total_weighted_count_ = goal_correct_count_ * pow(2, skeleton->outputs_.size());
 }
 
 void EvolutionLog::SaveLog() {

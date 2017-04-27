@@ -96,13 +96,17 @@ void Circuit::Evolve(const string& target) {
           glog.best_ = glog.bests_[0];
         }
         glog.best_->TestAll();
-        glog.best_->BinTruthToDec();
+        if (Util::kTruthWeight) {
+          glog.best_->BinTruthToDec();
+        }
         return glog;
       });
       futures.push_back(move(fut));
     }
 
-    circ->BinTruthToDec();
+    if (Util::kTruthWeight) {
+      circ->BinTruthToDec();
+    }
     int best_count = 0;
     if (Util::kTruthWeight) {
       best_count = circ->total_weighted_count_;
@@ -128,6 +132,7 @@ void Circuit::Evolve(const string& target) {
     }
     float actual = circ->total_count_ / float(elog.goal_total_count_);
     float weighted_actual = circ->total_weighted_count_ / float(elog.goal_total_weighted_count_);
+    cout << circ->total_weighted_count_ << " / " << elog.goal_total_weighted_count_ << "  =  " << weighted_actual << endl; 
     circ->percent_ = actual;
     circ->weighted_percent_ = weighted_actual;
     evaluations += Util::kChildren * Util::kThreads;
