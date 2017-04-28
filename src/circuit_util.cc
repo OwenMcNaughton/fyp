@@ -517,12 +517,8 @@ void Circuit::TestAll() {
     DetectOrphans();
   }
 
-  for (Gate* g : outputs_) {
-    best_pinnings_[g->name_] = PickRandomSrc(g->layer_);
-  }
-
-  // FindBestPinningsIter(0);
-  // AssignBestPinnings();
+  FindBestPinningsIter(0);
+  AssignBestPinnings();
 
   TestAllIter(0);
 }
